@@ -6,14 +6,28 @@ export default function Home() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "#0f172a",
-        color: "#fff",
         flexDirection: "column",
-        fontFamily: "sans-serif",
+        background: "#ffffff",
       }}
     >
-      <h1 style={{ fontSize: "48px", marginBottom: "20px" }}>ÖnceBak</h1>
-      <p>Kapadokya'nın yerel keşif platformu yakında yayında.</p>
+      <h1
+        style={{
+          fontSize: "56px",
+          fontWeight: "700",
+          marginBottom: "20px",
+        }}
+      >
+        ÖnceBak
+      </h1>
+
+      <p
+        style={{
+          fontSize: "22px",
+          color: "#666",
+        }}
+      >
+        Gitmeden önce bak.
+      </p>
     </main>
   );
 }
