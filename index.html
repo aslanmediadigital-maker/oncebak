@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ff6b2c" />
+  <title>ÖnceBak — Gitmeden önce bak</title>
+  <style>
+    :root{
+      --bg:#f7f5f1; --surface:#ffffff; --surface-2:#fffaf6; --text:#182026; --muted:#6f777d;
+      --line:#e8e3dc; --accent:#ff6b2c; --accent-2:#ff8a55; --dark:#11191f;
+      --success:#1ca96b; --shadow:0 18px 50px rgba(34,31,28,.10); --radius:22px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select{font:inherit}
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+    .container{width:min(1180px,calc(100% - 32px));margin:auto}
+    .topbar{position:sticky;top:0;z-index:50;background:rgba(247,245,241,.88);backdrop-filter:blur(18px);border-bottom:1px solid rgba(232,227,220,.75)}
+    .nav{height:74px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+    .brand{font-size:28px;font-weight:900;letter-spacing:-1.3px}.brand span{color:var(--accent)}
+    .navlinks{display:flex;gap:24px;font-size:14px;font-weight:700;color:#31383d}
+    .nav-actions{display:flex;gap:10px;align-items:center}
+    .icon-btn,.btn{border:none;cursor:pointer;border-radius:14px;transition:.2s ease}
+    .icon-btn{width:44px;height:44px;background:#fff;border:1px solid var(--line)}
+    .btn{padding:13px 18px;font-weight:800}
+    .btn-primary{background:var(--accent);color:#fff;box-shadow:0 10px 24px rgba(255,107,44,.25)}
+    .btn-primary:hover{transform:translateY(-1px);background:#f85b18}
+    .btn-soft{background:#fff;border:1px solid var(--line)}
+    .hero{position:relative;overflow:hidden;padding:68px 0 34px;background:
+      radial-gradient(circle at 85% 15%,rgba(255,107,44,.18),transparent 30%),
+      linear-gradient(180deg,#fff9f4 0%,#f7f5f1 100%)}
+    .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:46px;align-items:center}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid var(--line);border-radius:99px;font-size:13px;font-weight:800;color:#5e656a}
+    .hero h1{font-size:clamp(44px,6vw,74px);line-height:.98;letter-spacing:-3.8px;margin:18px 0}
+    .hero h1 span{color:var(--accent)}
+    .hero p{font-size:19px;line-height:1.65;color:var(--muted);max-width:650px}
+    .hero-visual{position:relative;min-height:460px;border-radius:34px;overflow:hidden;box-shadow:var(--shadow);background:
+      linear-gradient(180deg,rgba(24,32,38,.04),rgba(24,32,38,.52)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 700'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop stop-color='%23ffd7bd'/%3E%3Cstop offset='1' stop-color='%23c98255'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='900' height='700' fill='url(%23s)'/%3E%3Ccircle cx='690' cy='120' r='46' fill='%23fff2df'/%3E%3Cpath d='M0 430L120 300l110 90 120-170 125 190 95-110 140 160 190-120v360H0z' fill='%237a4b35'/%3E%3Cpath d='M0 520l150-120 150 70 150-100 170 110 150-60 130 80v200H0z' fill='%234f3328' opacity='.9'/%3E%3Cg fill='%23ff7b3a'%3E%3Cellipse cx='145' cy='140' rx='24' ry='32'/%3E%3Crect x='139' y='170' width='12' height='14'/%3E%3Cellipse cx='495' cy='105' rx='21' ry='28'/%3E%3Crect x='490' y='131' width='10' height='12'/%3E%3Cellipse cx='760' cy='185' rx='28' ry='36'/%3E%3Crect x='754' y='218' width='12' height='14'/%3E%3C/g%3E%3C/svg%3E") center/cover}
+    .floating-card{position:absolute;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.65);border-radius:18px;padding:14px 16px;box-shadow:0 12px 34px rgba(0,0,0,.15)}
+    .fc1{left:20px;bottom:22px}.fc2{right:20px;top:20px}
+    .search-panel{margin-top:-12px;position:relative;z-index:5}
+    .search-box{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);border-radius:24px;padding:14px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px}
+    .field{background:#faf8f5;border:1px solid #eee8e1;border-radius:15px;padding:12px 14px}
+    .field label{display:block;font-size:11px;font-weight:900;color:#7a8186;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+    .field select{width:100%;border:0;background:transparent;color:var(--text);outline:none;font-weight:700}
+    section{padding:64px 0}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:24px}
+    .section-head h2{font-size:34px;letter-spacing:-1.5px;margin:0}.section-head p{color:var(--muted);margin:7px 0 0}
+    .chips{display:flex;gap:10px;flex-wrap:wrap}.chip{padding:10px 14px;border-radius:99px;background:#fff;border:1px solid var(--line);cursor:pointer;font-weight:800;font-size:14px}
+    .chip.active{background:var(--dark);color:white;border-color:var(--dark)}
+    .category-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+    .category{background:#fff;border:1px solid var(--line);border-radius:18px;padding:19px;text-align:center;cursor:pointer;transition:.2s}
+    .category:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+    .category .emoji{font-size:28px}.category b{display:block;margin-top:10px}.category small{color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .card{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;transition:.22s;position:relative}
+    .card:hover{transform:translateY(-5px);box-shadow:var(--shadow)}
+    .cover{height:210px;position:relative;background-size:cover;background-position:center}
+    .badge{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.92);padding:7px 10px;border-radius:99px;font-size:12px;font-weight:900}
+    .heart{position:absolute;right:14px;top:14px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.94);cursor:pointer;font-size:19px}
+    .card-body{padding:17px}.card-title{font-size:19px;font-weight:900}.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin:7px 0 12px}
+    .rating{color:#ff9b2f;font-weight:900}.price{font-weight:900}
+    .card-actions{display:flex;gap:10px}.card-actions .btn{flex:1;padding:11px 12px}
+    .feature-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+    .feature{background:var(--surface-2);border:1px solid #f0e4d9;border-radius:18px;padding:18px}.feature b{display:block;margin:10px 0 4px}.feature small{color:var(--muted)}
+    .cta{background:var(--dark);color:#fff;border-radius:30px;padding:44px;display:flex;justify-content:space-between;align-items:center;gap:20px}
+    .cta h3{font-size:34px;margin:0 0 8px}.cta p{color:#cdd3d7;margin:0}
+    footer{background:#11191f;color:#fff;padding:48px 0 24px;margin-top:30px}
+    .footer-grid{display:grid;grid-template-columns:1.4fr repeat(3,1fr);gap:30px}.footer-grid h4{margin:0 0 14px}.footer-grid a{display:block;color:#bfc6ca;margin:9px 0;font-size:14px}
+    .copyright{border-top:1px solid #2b3338;margin-top:34px;padding-top:18px;color:#98a0a5;font-size:13px}
+    .modal{position:fixed;inset:0;background:rgba(12,18,22,.62);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+    .modal.open{display:flex}.modal-panel{width:min(920px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:28px;box-shadow:0 30px 90px rgba(0,0,0,.35)}
+    .modal-hero{height:320px;background-size:cover;background-position:center;position:relative}.close{position:absolute;right:18px;top:18px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;cursor:pointer;font-size:20px}
+    .modal-content{padding:28px}.modal-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:28px}.info-box{background:#faf8f5;border:1px solid var(--line);border-radius:18px;padding:18px}
+    .tabs{display:flex;gap:10px;margin:22px 0}.tab{padding:10px 14px;border-radius:99px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:800}.tab.active{background:var(--dark);color:#fff}
+    .menu-item{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+    .admin-drawer{position:fixed;right:-520px;top:0;height:100vh;width:min(500px,100%);background:#fff;z-index:120;box-shadow:-20px 0 70px rgba(0,0,0,.24);transition:.3s;padding:24px;overflow:auto}
+    .admin-drawer.open{right:0}.admin-head{display:flex;justify-content:space-between;align-items:center}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.stat{background:#faf8f5;border:1px solid var(--line);border-radius:16px;padding:18px}.stat strong{font-size:27px;display:block}
+    .admin-list{display:grid;gap:10px}.admin-row{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:14px;padding:13px}
+    .toast{position:fixed;left:50%;bottom:25px;transform:translateX(-50%) translateY(30px);background:#11191f;color:#fff;padding:13px 18px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;z-index:200}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .mobile-menu{display:none}
+    @media(max-width:900px){
+      .navlinks{display:none}.mobile-menu{display:inline-grid;place-items:center}
+      .hero-grid{grid-template-columns:1fr}.hero-visual{min-height:360px}
+      .search-box{grid-template-columns:1fr 1fr}.category-grid{grid-template-columns:repeat(3,1fr)}
+      .cards{grid-template-columns:repeat(2,1fr)}.feature-strip{grid-template-columns:repeat(2,1fr)}
+      .footer-grid{grid-template-columns:1fr 1fr}.modal-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:600px){
+      .container{width:min(100% - 22px,1180px)}.hero{padding-top:38px}.hero h1{font-size:48px;letter-spacing:-2.5px}
+      .hero p{font-size:16px}.hero-visual{min-height:300px}.search-box{grid-template-columns:1fr}
+      .category-grid{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.feature-strip{grid-template-columns:1fr}
+      .cta{padding:28px;align-items:flex-start;flex-direction:column}.footer-grid{grid-template-columns:1fr}
+      .section-head{align-items:flex-start;flex-direction:column}.modal-hero{height:220px}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container nav">
+      <a class="brand" href="#home">Önce<span>Bak</span></a>
+      <nav class="navlinks">
+        <a href="#home">Ana Sayfa</a><a href="#mekanlar">Mekânlar</a><a href="#kategoriler">Kategoriler</a><a href="#isletme">İşletmeni Ekle</a>
+      </nav>
+      <div class="nav-actions">
+        <button class="icon-btn" id="favoritesBtn" title="Favoriler">♡ <span id="favCount">0</span></button>
+        <button class="icon-btn" id="adminBtn" title="Yönetim paneli">☰</button>
+        <button class="icon-btn mobile-menu">≡</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="home">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">📍 Kapadokya için yerel keşif platformu</div>
+          <h1>Gitmeden önce <span>ÖnceBak.</span></h1>
+          <p>Restoranları, kafeleri ve aktiviteleri güncel fiyatları, gerçek menüleri ve doğrulanmış bilgileriyle keşfet.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap">
+            <a class="btn btn-primary" href="#mekanlar">Mekânları keşfet</a>
+            <a class="btn btn-soft" href="#isletme">İşletmeni ekle</a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="floating-card fc1"><b>4.8 ★</b><br><small>320 doğrulanmış değerlendirme</small></div>
+          <div class="floating-card fc2"><b>Güncel menüler</b><br><small>Son kontrol: bugün</small></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="search-panel">
+      <div class="container">
+        <div class="search-box">
+          <div class="field"><label>Bölge</label><select id="regionFilter"><option value="all">Tüm bölgeler</option><option>Göreme</option><option>Ürgüp</option><option>Uçhisar</option><option>Avanos</option></select></div>
+          <div class="field"><label>Kategori</label><select id="categoryFilter"><option value="all">Tüm kategoriler</option><option>Restoran</option><option>Kafe</option><option>Kahvaltı</option><option>Aktivite</option></select></div>
+          <div class="field"><label>Fiyat</label><select id="priceFilter"><option value="all">Tüm fiyatlar</option><option value="low">₺ Ekonomik</option><option value="mid">₺₺ Orta</option><option value="high">₺₺₺ Premium</option></select></div>
+          <button class="btn btn-primary" id="searchBtn">Ara</button>
+        </div>
+      </div>
+    </div>
+
+    <section id="kategoriler">
+      <div class="container">
+        <div class="section-head"><div><h2>Popüler kategoriler</h2><p>Ne aradığını seç, sana uygun yerleri hemen gösterelim.</p></div></div>
+        <div class="category-grid">
+          <div class="category" data-cat="Restoran"><div class="emoji">🍽️</div><b>Restoranlar</b><small>120+ mekân</small></div>
+          <div class="category" data-cat="Kafe"><div class="emoji">☕</div><b>Kafeler</b><small>85+ mekân</small></div>
+          <div class="category" data-cat="Kahvaltı"><div class="emoji">🥐</div><b>Kahvaltı</b><small>60+ mekân</small></div>
+          <div class="category" data-cat="Restoran"><div class="emoji">🏜️</div><b>Manzaralı</b><small>45+ mekân</small></div>
+          <div class="category" data-cat="Aktivite"><div class="emoji">🎈</div><b>Aktiviteler</b><small>30+ seçenek</small></div>
+          <div class="category" data-cat="Kafe"><div class="emoji">🍰</div><b>Tatlıcılar</b><small>25+ mekân</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="mekanlar" style="padding-top:18px">
+      <div class="container">
+        <div class="section-head">
+          <div><h2>Öne çıkan mekânlar</h2><p>Fiyatı, menüsü ve iletişim bilgileri doğrulanmış işletmeler.</p></div>
+          <div class="chips"><button class="chip active" data-region="all">Tümü</button><button class="chip" data-region="Göreme">Göreme</button><button class="chip" data-region="Ürgüp">Ürgüp</button><button class="chip" data-region="Uçhisar">Uçhisar</button></div>
+        </div>
+        <div class="cards" id="cards"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="feature-strip">
+          <div class="feature">🧾<b>Gerçek menüler</b><small>Bilgiler doğrudan işletmelerden alınır.</small></div>
+          <div class="feature">🔄<b>Güncel fiyatlar</b><small>Fiyat güncelleme tarihi açıkça gösterilir.</small></div>
+          <div class="feature">✅<b>Doğrulanmış bilgiler</b><small>Yayın öncesi bilgiler kontrol edilir.</small></div>
+          <div class="feature">💬<b>Kolay iletişim</b><small>Tek tıkla WhatsApp, telefon ve konum.</small></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="isletme">
+      <div class="container">
+        <div class="cta">
+          <div><h3>İşletmeni ÖnceBak’a ekle</h3><p>Menünü, fiyatlarını ve iletişim bilgilerini binlerce potansiyel müşteriye göster.</p></div>
+          <button class="btn btn-primary" id="applyBtn">Ücretsiz başvuru yap</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div><div class="brand">Önce<span>Bak</span></div><p style="color:#bfc6ca;max-width:340px;line-height:1.7">Kapadokya’daki en güzel mekânları, menüleri ve güncel fiyatları gitmeden önce keşfet.</p></div>
+        <div><h4>Keşfet</h4><a href="#mekanlar">Mekânlar</a><a href="#kategoriler">Kategoriler</a><a href="#">Bölgeler</a></div>
+        <div><h4>İşletmeler</h4><a href="#isletme">İşletmeni ekle</a><a href="#">Premium profil</a><a href="#">Reklam seçenekleri</a></div>
+        <div><h4>İletişim</h4><a href="#">info@oncebak.com</a><a href="#">Göreme, Nevşehir</a><a href="#">Instagram</a></div>
+      </div>
+      <div class="copyright">© 2026 ÖnceBak. Bu dosya etkileşimli önizleme amacıyla hazırlanmıştır.</div>
+    </div>
+  </footer>
+
+  <div class="modal" id="detailModal">
+    <div class="modal-panel">
+      <div class="modal-hero" id="modalHero"><button class="close" id="closeModal">×</button></div>
+      <div class="modal-content">
+        <div class="modal-grid">
+          <div>
+            <div class="eyebrow" id="modalBadge">Doğrulanmış işletme</div>
+            <h2 id="modalTitle" style="font-size:36px;margin:14px 0 6px"></h2>
+            <p id="modalDesc" style="color:var(--muted);line-height:1.7"></p>
+            <div class="tabs"><button class="tab active">Menü</button><button class="tab">Fotoğraflar</button><button class="tab">Özellikler</button></div>
+            <div id="menuList"></div>
+          </div>
+          <aside>
+            <div class="info-box">
+              <b id="modalRegion"></b><p style="color:var(--muted)">Her gün 08:00–23:00</p>
+              <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="toast('WhatsApp yönlendirmesi açıldı')">WhatsApp</button>
+              <button class="btn btn-soft" style="width:100%;margin-bottom:10px" onclick="toast('Harita bağlantısı açıldı')">Yol tarifi</button>
+              <button class="btn btn-soft" style="width:100%" onclick="toast('Telefon numarası kopyalandı')">Telefon</button>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="admin-drawer" id="adminDrawer">
+    <div class="admin-head"><div><div class="brand" style="font-size:24px">Önce<span>Bak</span></div><small>Yönetim paneli önizlemesi</small></div><button class="icon-btn" id="closeAdmin">×</button></div>
+    <div class="stats"><div class="stat"><small>Toplam mekân</small><strong>128</strong></div><div class="stat"><small>Toplam tıklama</small><strong>2.450</strong></div><div class="stat"><small>WhatsApp</small><strong>1.320</strong></div><div class="stat"><small>Başvuru</small><strong>18</strong></div></div>
+    <h3>Son eklenen işletmeler</h3>
+    <div class="admin-list">
+      <div class="admin-row"><span>Seyr-i Kapadokya</span><b style="color:var(--success)">Onaylı</b></div>
+      <div class="admin-row"><span>Köy Evi Cafe</span><b style="color:var(--success)">Onaylı</b></div>
+      <div class="admin-row"><span>ABC Restaurant</span><b style="color:#d89100">Beklemede</b></div>
+      <div class="admin-row"><span>Test Cafe</span><b style="color:#d89100">Beklemede</b></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:20px" onclick="toast('Yeni işletme formu açıldı')">Yeni işletme ekle</button>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const svgBg = (a,b,c) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 560'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='${encodeURIComponent(a)}'/%3E%3Cstop offset='1' stop-color='${encodeURIComponent(b)}'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='900' height='560' fill='url(%23g)'/%3E%3Ccircle cx='690' cy='100' r='54' fill='%23fff0d5' opacity='.9'/%3E%3Cpath d='M0 420L120 260l130 120 130-210 140 220 120-140 150 170 160-130v270H0z' fill='${encodeURIComponent(c)}'/%3E%3Cpath d='M0 480l180-120 150 70 160-100 150 90 140-60 120 90v110H0z' fill='%23251c17' opacity='.75'/%3E%3C/svg%3E")`;
+
+    const places = [
+      {id:1,name:"Seyr-i Kapadokya",region:"Göreme",cat:"Restoran",price:"high",priceText:"₺₺₺ · 450₺",rating:"4.8",badge:"Manzaralı",desc:"Kapadokya manzarası eşliğinde yerel ve modern lezzetler sunan premium restoran.",bg:svgBg("#f0a56d","#834937","#523327"),menu:[["Serpme Kahvaltı","650₺"],["Testi Kebabı","490₺"],["Mantı","320₺"],["Türk Kahvesi","95₺"]]},
+      {id:2,name:"Seten Restaurant",region:"Uçhisar",cat:"Restoran",price:"mid",priceText:"₺₺ · 350₺",rating:"4.7",badge:"Popüler",desc:"Taş mimarisi, sıcak atmosferi ve geleneksel Anadolu mutfağıyla öne çıkan seçkin mekân.",bg:svgBg("#cf8b58","#4c3028","#3d281f"),menu:[["Et Tabağı","520₺"],["Kabak Çiçeği Dolması","240₺"],["Humus","180₺"],["Ayran","75₺"]]},
+      {id:3,name:"Topdeck Cave",region:"Göreme",cat:"Restoran",price:"mid",priceText:"₺₺ · 300₺",rating:"4.6",badge:"Mağara",desc:"Otantik mağara atmosferinde sakin ve özel bir akşam yemeği deneyimi.",bg:svgBg("#d58f63","#5f3e30","#402920"),menu:[["Karışık Izgara","480₺"],["Mercimek Çorbası","120₺"],["Güveç","390₺"],["Tatlı","160₺"]]},
+      {id:4,name:"Köy Evi Cafe",region:"Avanos",cat:"Kafe",price:"low",priceText:"₺ · 250₺",rating:"4.5",badge:"Aile Dostu",desc:"Bahçeli, huzurlu ve yerel ürünleriyle öne çıkan sıcak bir kafe deneyimi.",bg:svgBg("#8ab46d","#47765e","#2d5545"),menu:[["Köy Kahvaltısı","420₺"],["Gözleme","180₺"],["Çay","40₺"],["Ev Limonatası","110₺"]]},
+      {id:5,name:"İnci Cave Restaurant",region:"Ürgüp",cat:"Restoran",price:"high",priceText:"₺₺₺ · 400₺",rating:"4.6",badge:"Premium",desc:"Şık mağara mimarisi ve özel sunumlarıyla romantik akşam yemekleri için ideal.",bg:svgBg("#b36f45","#422b24","#2f201b"),menu:[["Şef Menüsü","790₺"],["Dana Lokum","620₺"],["Şarap Tabağı","340₺"],["Sufle","190₺"]]},
+      {id:6,name:"Balon Kahvaltı",region:"Göreme",cat:"Kahvaltı",price:"mid",priceText:"₺₺ · 330₺",rating:"4.9",badge:"Gün Doğumu",desc:"Balon manzarası karşısında erken saat kahvaltısı ve fotoğraf deneyimi.",bg:svgBg("#f7b57c","#7a5d75","#4e3c4d"),menu:[["Serpme Kahvaltı","560₺"],["Menemen","190₺"],["Pişi Tabağı","210₺"],["Filtre Kahve","120₺"]]}
+    ];
+
+    let favorites = new Set();
+    const cards = document.getElementById("cards");
+
+    function render(list=places){
+      cards.innerHTML = list.map(p => `
+        <article class="card">
+          <div class="cover" style="background-image:${p.bg}">
+            <span class="badge">${p.badge}</span>
+            <button class="heart" onclick="toggleFav(${p.id},event)">${favorites.has(p.id)?"♥":"♡"}</button>
+          </div>
+          <div class="card-body">
+            <div class="card-title">${p.name}</div>
+            <div class="meta"><span>${p.region} · ${p.cat}</span><span class="rating">★ ${p.rating}</span></div>
+            <div class="meta"><span>Ortalama kişi başı</span><span class="price">${p.priceText}</span></div>
+            <div class="card-actions">
+              <button class="btn btn-soft" onclick="openDetail(${p.id})">Detay</button>
+              <button class="btn btn-primary" onclick="openDetail(${p.id})">Menüyü gör</button>
+            </div>
+          </div>
+        </article>`).join("");
+    }
+
+    function applyFilters(){
+      const r=document.getElementById("regionFilter").value;
+      const c=document.getElementById("categoryFilter").value;
+      const p=document.getElementById("priceFilter").value;
+      const list=places.filter(x=>(r==="all"||x.region===r)&&(c==="all"||x.cat===c)&&(p==="all"||x.price===p));
+      render(list);
+      toast(`${list.length} sonuç bulundu`);
+      document.getElementById("mekanlar").scrollIntoView();
+    }
+    document.getElementById("searchBtn").onclick=applyFilters;
+
+    document.querySelectorAll(".category").forEach(el=>el.onclick=()=>{
+      document.getElementById("categoryFilter").value=el.dataset.cat;
+      applyFilters();
+    });
+
+    document.querySelectorAll(".chip").forEach(ch=>ch.onclick=()=>{
+      document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active")); ch.classList.add("active");
+      const region=ch.dataset.region;
+      render(region==="all"?places:places.filter(p=>p.region===region));
+    });
+
+    function toggleFav(id,e){
+      e.stopPropagation();
+      favorites.has(id)?favorites.delete(id):favorites.add(id);
+      document.getElementById("favCount").textContent=favorites.size;
+      render(currentFiltered());
+      toast(favorites.has(id)?"Favorilere eklendi":"Favorilerden çıkarıldı");
+    }
+    function currentFiltered(){ return places; }
+
+    function openDetail(id){
+      const p=places.find(x=>x.id===id);
+      document.getElementById("modalHero").style.backgroundImage=p.bg;
+      document.getElementById("modalTitle").textContent=p.name;
+      document.getElementById("modalDesc").textContent=p.desc;
+      document.getElementById("modalRegion").textContent=`${p.region} · ${p.cat} · ${p.priceText}`;
+      document.getElementById("menuList").innerHTML=p.menu.map(m=>`<div class="menu-item"><span>${m[0]}</span><b>${m[1]}</b></div>`).join("");
+      document.getElementById("detailModal").classList.add("open");
+    }
+    document.getElementById("closeModal").onclick=()=>document.getElementById("detailModal").classList.remove("open");
+    document.getElementById("detailModal").onclick=e=>{if(e.target.id==="detailModal")e.currentTarget.classList.remove("open")};
+
+    document.getElementById("adminBtn").onclick=()=>document.getElementById("adminDrawer").classList.add("open");
+    document.getElementById("closeAdmin").onclick=()=>document.getElementById("adminDrawer").classList.remove("open");
+    document.getElementById("favoritesBtn").onclick=()=>{render(places.filter(p=>favorites.has(p.id)));document.getElementById("mekanlar").scrollIntoView();toast(`${favorites.size} favori gösteriliyor`)};
+    document.getElementById("applyBtn").onclick=()=>toast("Başvuru formu önizlemesi açıldı");
+
+    function toast(msg){
+      const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800)
+    }
+    window.toast=toast; window.openDetail=openDetail; window.toggleFav=toggleFav;
+    render();
+  </script>
+</body>
+</html>
