@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 type Place = {
-  id: number;
+  id: string;
   name: string;
   region: string;
   category: string;
@@ -11,16 +12,42 @@ type Place = {
   rating: number;
   badge: string;
   theme: string;
+  coverImage: string | null;
 };
 
-const places: Place[] = [
-  { id: 1, name: "Seyr-i Kapadokya", region: "Göreme", category: "Restoran", price: "450₺", rating: 4.8, badge: "Manzaralı", theme: "sunset" },
-  { id: 2, name: "Seten Restaurant", region: "Uçhisar", category: "Restoran", price: "350₺", rating: 4.7, badge: "Popüler", theme: "cave" },
-  { id: 3, name: "Balon Kahvaltı", region: "Göreme", category: "Kahvaltı", price: "330₺", rating: 4.9, badge: "Gün Doğumu", theme: "balloon-card" },
-  { id: 4, name: "Köy Evi Cafe", region: "Avanos", category: "Kafe", price: "250₺", rating: 4.5, badge: "Aile Dostu", theme: "garden" },
-  { id: 5, name: "İnci Cave", region: "Ürgüp", category: "Restoran", price: "400₺", rating: 4.6, badge: "Romantik", theme: "night" },
-  { id: 6, name: "Vadi Kahve", region: "Uçhisar", category: "Kafe", price: "190₺", rating: 4.7, badge: "Yeni", theme: "valley" },
-];
+type DbBusiness = {
+  id: string;
+  name: string;
+  region: string | null;
+  price_level: number | null;
+  rating: number | string | null;
+  verified: boolean | null;
+  featured: boolean | null;
+  cover_image: string | null;
+  categories: { name: string } | { name: string }[] | null;
+};
+
+const themes = ["sunset", "cave", "balloon-card", "garden", "night", "valley"];
+
+function getCategoryName(category: DbBusiness["categories"]): string {
+  if (Array.isArray(category)) {
+    return category[0]?.name ?? "Restoran";
+  }
+
+  return category?.name ?? "Restoran";
+}
+
+function getPriceText(priceLevel: number | null): string {
+  if (priceLevel === 1) return "200₺";
+  if (priceLevel === 3) return "500₺";
+  return "350₺";
+}
+
+function getBadge(business: DbBusiness): string {
+  if (business.featured) return "Öne Çıkan";
+  if (business.verified) return "Doğrulanmış";
+  return "Yeni";
+}
 
 const categories = [
   ["🍽️", "Restoran", "120+ mekân"],
@@ -32,11 +59,65 @@ const categories = [
 ];
 
 export default function Home() {
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
   const [region, setRegion] = useState("Tümü");
   const [category, setCategory] = useState("Tümü");
   const [price, setPrice] = useState("Tümü");
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadBusinesses() {
+      setLoading(true);
+      setLoadError("");
+
+      const { data, error } = await supabase
+        .from("businesses")
+        .select(
+          "id, name, region, price_level, rating, verified, featured, cover_image, categories(name)"
+        )
+        .order("featured", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error("İşletmeler alınamadı:", error);
+        setLoadError("İşletmeler şu anda yüklenemedi.");
+        setPlaces([]);
+        setLoading(false);
+        return;
+      }
+
+      const mappedPlaces: Place[] = ((data ?? []) as unknown as DbBusiness[]).map(
+        (business, index) => ({
+          id: business.id,
+          name: business.name,
+          region: business.region ?? "Kapadokya",
+          category: getCategoryName(business.categories),
+          price: getPriceText(business.price_level),
+          rating: Number(business.rating ?? 0),
+          badge: getBadge(business),
+          theme: themes[index % themes.length],
+          coverImage: business.cover_image,
+        })
+      );
+
+      setPlaces(mappedPlaces);
+      setLoading(false);
+    }
+
+    loadBusinesses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     return places.filter((place) => {
@@ -50,9 +131,9 @@ export default function Home() {
         (price === "Premium" && numericPrice > 400);
       return regionOk && categoryOk && priceOk;
     });
-  }, [region, category, price]);
+  }, [places, region, category, price]);
 
-  function toggleFavorite(id: number) {
+  function toggleFavorite(id: string) {
     setFavorites((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
@@ -172,16 +253,41 @@ export default function Home() {
           <div className="section-heading row-heading">
             <div>
               <h2>Öne çıkan mekânlar</h2>
-              <p>{filtered.length} doğrulanmış sonuç gösteriliyor.</p>
+              <p>
+                {loading
+                  ? "İşletmeler yükleniyor..."
+                  : `${filtered.length} doğrulanmış sonuç gösteriliyor.`}
+              </p>
             </div>
             <a href="#mekanlar">Tümünü gör →</a>
           </div>
 
-          {filtered.length > 0 ? (
+          {loadError ? (
+            <div className="empty-state">
+              <b>Bağlantı hatası</b>
+              <p>{loadError}</p>
+            </div>
+          ) : loading ? (
+            <div className="empty-state">
+              <b>Yükleniyor</b>
+              <p>İşletmeler veritabanından getiriliyor.</p>
+            </div>
+          ) : filtered.length > 0 ? (
             <div className="places-grid">
               {filtered.map((place) => (
                 <article key={place.id} className="place-card">
-                  <div className={`place-image ${place.theme}`}>
+                  <div
+                    className={`place-image ${place.theme}`}
+                    style={
+                      place.coverImage
+                        ? {
+                            backgroundImage: `url("${place.coverImage}")`,
+                            backgroundPosition: "center",
+                            backgroundSize: "cover",
+                          }
+                        : undefined
+                    }
+                  >
                     <span className="place-badge">{place.badge}</span>
                     <button
                       className={`heart ${favorites.includes(place.id) ? "active" : ""}`}
@@ -190,13 +296,15 @@ export default function Home() {
                     >
                       {favorites.includes(place.id) ? "♥" : "♡"}
                     </button>
-                    <div className="mini-landscape"><i /><i /><i /></div>
+                    {!place.coverImage && (
+                      <div className="mini-landscape"><i /><i /><i /></div>
+                    )}
                   </div>
 
                   <div className="place-content">
                     <div className="place-title-row">
                       <h3>{place.name}</h3>
-                      <b>⭐ {place.rating}</b>
+                      <b>⭐ {place.rating.toFixed(1)}</b>
                     </div>
                     <p>{place.region} · {place.category}</p>
                     <div className="price-row">
