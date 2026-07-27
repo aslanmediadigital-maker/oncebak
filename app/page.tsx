@@ -38,9 +38,11 @@ function getCategoryName(category: DbBusiness["categories"]): string {
 }
 
 function getPriceText(priceLevel: number | null): string {
-  if (priceLevel === 1) return "200₺";
-  if (priceLevel === 3) return "500₺";
-  return "350₺";
+  if (priceLevel === null || priceLevel <= 0) {
+    return "Fiyat belirtilmedi";
+  }
+
+  return `${priceLevel.toLocaleString("tr-TR")}₺`;
 }
 
 function getBadge(business: DbBusiness): string {
