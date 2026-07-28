@@ -9,11 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@next/third-parties": "^16.2.12",
     "@supabase/supabase-js": "^2.56.0",
+    "lucide-react": "latest",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest",
-    "lucide-react": "latest"
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "latest",
