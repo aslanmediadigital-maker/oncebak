@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/admin"],
     },
-    sitemap: "https://oncebak.com/sitemap.xml",
-    host: "https://oncebak.com",
+    sitemap: "https://xn--ncebak-vxa.com",
+    host: "https://xn--ncebak-vxa.com",
   };
 }

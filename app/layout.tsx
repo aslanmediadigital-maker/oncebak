@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://oncebak.com"),
+  metadataBase: new URL("https://xn--ncebak-vxa.com"),
 
   title: {
     default: "ÖnceBak | Kapadokya Mekan Rehberi",
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "tr_TR",
-    url: "https://oncebak.com",
+    url: "https://xn--ncebak-vxa.com",
     siteName: "ÖnceBak",
     title: "ÖnceBak | Kapadokya Mekan Rehberi",
     description:
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   },
 
   alternates: {
-    canonical: "https://oncebak.com",
+    canonical: "https://xn--ncebak-vxa.com",
   },
 
   icons: {

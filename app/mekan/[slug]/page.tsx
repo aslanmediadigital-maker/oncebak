@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { supabase } from "../../../lib/supabase";
 import BusinessDetailClient from "./BusinessDetailClient";
 
+const BASE_URL = "https://xn--ncebak-vxa.com";
+
 type PageProps = {
   params: Promise<{
     slug: string;
@@ -57,7 +59,7 @@ export async function generateMetadata({
     business.description?.slice(0, 160) ||
     `${business.name} için güncel menü, fiyat, konum ve iletişim bilgilerini ÖnceBak üzerinden inceleyin.`;
 
-  const canonicalUrl = `https://oncebak.com/mekan/${business.slug}`;
+  const canonicalUrl = `${BASE_URL}/mekan/${business.slug}`;
 
   return {
     title: business.name,
@@ -100,8 +102,8 @@ export default async function Page({ params }: PageProps) {
   const business = await getBusiness(slug);
 
   const pageUrl = business
-    ? `https://oncebak.com/mekan/${business.slug}`
-    : `https://oncebak.com/mekan/${slug}`;
+    ? `${BASE_URL}/mekan/${business.slug}`
+    : `${BASE_URL}/mekan/${slug}`;
 
   const instagramUrl = business?.instagram
     ? business.instagram.startsWith("http")
