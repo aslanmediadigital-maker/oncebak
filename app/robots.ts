@@ -1,13 +1,15 @@
 import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = "https://xn--ncebak-vxa.com";
+
   return {
     rules: {
       userAgent: "*",
       allow: "/",
       disallow: ["/admin"],
     },
-    sitemap: "https://xn--ncebak-vxa.com",
-    host: "https://xn--ncebak-vxa.com",
+    host: baseUrl,
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }
