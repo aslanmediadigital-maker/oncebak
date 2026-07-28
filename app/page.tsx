@@ -88,6 +88,20 @@ export default function HomePage() {
   const [activeRegion, setActiveRegion] = useState("Tüm Bölgeler");
   const [activeCategory, setActiveCategory] = useState("Tüm Kategoriler");
   const [showAll, setShowAll] = useState(false);
+  const [navScrolled, setNavScrolled] = useState(false);
+
+  useEffect(() => {
+    function handleScroll() {
+      setNavScrolled(window.scrollY > 24);
+    }
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -217,7 +231,7 @@ export default function HomePage() {
 
   return (
     <main>
-      <header className="topbar">
+      <header className={`topbar ${navScrolled ? "scrolled" : ""}`}>
         <div className="shell nav">
           <Link href="/" className="brand" aria-label="ÖnceBak ana sayfa">
             Önce<span>Bak</span>
@@ -231,8 +245,8 @@ export default function HomePage() {
             <Link href="#nasil-calisir">Nasıl Çalışır?</Link>
           </nav>
 
-          <Link href="/admin" className="business-link">
-            İşletmeni Ekle
+          <Link href="/iletisim" className="business-link">
+            İşletmeni Tanıt
           </Link>
         </div>
       </header>
@@ -520,27 +534,44 @@ export default function HomePage() {
               Önce<span>Bak</span>
             </Link>
             <p>
-              Kapadokya&apos;daki işletmeleri gitmeden önce daha yakından tanı.
+              Kapadokya&apos;daki restoranları, kafeleri ve aktiviteleri güncel
+              bilgilerle keşfet. Gitmeden önce bak, sürpriz yaşamadan karar ver.
             </p>
           </div>
 
           <div>
             <strong>Keşfet</strong>
-            <Link href="#mekanlar">Mekânlar</Link>
-            <Link href="#kategoriler">Kategoriler</Link>
-            <Link href="#nasil-calisir">Nasıl Çalışır?</Link>
+            <Link href="/#mekanlar">Mekânlar</Link>
+            <Link href="/#kategoriler">Kategoriler</Link>
+            <Link href="/#nasil-calisir">Nasıl Çalışır?</Link>
           </div>
 
           <div>
-            <strong>İşletmeler</strong>
-            <Link href="/admin">İşletmeni Ekle</Link>
-            <Link href="/admin">Yönetim Paneli</Link>
+            <strong>Kurumsal</strong>
+            <Link href="/hakkimizda">Hakkımızda</Link>
+            <Link href="/gizlilik">Gizlilik Politikası</Link>
+            <Link href="/iletisim">İletişim</Link>
+          </div>
+
+          <div className="footer-business">
+            <strong>İşletme Sahibi misiniz?</strong>
+            <p>
+              İşletmenizi ÖnceBak&apos;ta tanıtın ve Kapadokya&apos;yı keşfeden
+              daha fazla kişiye ulaşın.
+            </p>
+            <Link href="/iletisim" className="footer-business-button">
+              İşletmeni Tanıt →
+            </Link>
           </div>
         </div>
 
         <div className="shell copyright">
-          <span>© {new Date().getFullYear()} ÖnceBak</span>
-          <span>Gitmeden önce bak.</span>
+          <span>© {new Date().getFullYear()} ÖnceBak. Tüm hakları saklıdır.</span>
+          <div className="copyright-links">
+            <Link href="/hakkimizda">Hakkımızda</Link>
+            <Link href="/gizlilik">Gizlilik</Link>
+            <Link href="/iletisim">İletişim</Link>
+          </div>
         </div>
       </footer>
 
@@ -597,12 +628,41 @@ function GlobalStyles() {
       }
 
       .topbar {
-        position: absolute;
-        z-index: 20;
+        position: fixed;
+        z-index: 50;
         top: 0;
         left: 0;
         width: 100%;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+        background: transparent;
+        border-bottom: 1px solid transparent;
+        box-shadow: none;
+        transition:
+          background 0.28s ease,
+          border-color 0.28s ease,
+          box-shadow 0.28s ease,
+          backdrop-filter 0.28s ease;
+      }
+
+      .topbar.scrolled {
+        background: rgba(14, 11, 9, 0.78);
+        border-bottom-color: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+      }
+
+      .topbar:not(.scrolled)::after {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        inset: 0;
+        background: linear-gradient(
+          180deg,
+          rgba(10, 7, 5, 0.46) 0%,
+          rgba(10, 7, 5, 0.12) 72%,
+          transparent 100%
+        );
+        pointer-events: none;
       }
 
       .nav {
@@ -656,14 +716,21 @@ function GlobalStyles() {
       }
 
       .business-link {
-        padding: 12px 17px;
-        border: 1px solid rgba(255, 255, 255, 0.32);
+        padding: 13px 19px;
+        border: 1px solid var(--accent);
         border-radius: 999px;
+        background: var(--accent);
         color: white;
         font-size: 11px;
         font-weight: 900;
         text-decoration: none;
-        backdrop-filter: blur(12px);
+        transition: 0.25s ease;
+      }
+
+      .business-link:hover {
+        border-color: var(--accent-dark);
+        background: var(--accent-dark);
+        transform: translateY(-2px);
       }
 
       .hero {
@@ -1237,8 +1304,9 @@ function GlobalStyles() {
 
       .footer-content {
         display: grid;
-        grid-template-columns: 1.7fr 0.7fr 0.7fr;
-        gap: 60px;
+        grid-template-columns: 1.45fr 0.65fr 0.65fr 1.15fr;
+        gap: 50px;
+        align-items: start;
       }
 
       .footer-brand {
@@ -1271,6 +1339,65 @@ function GlobalStyles() {
         color: rgba(255, 255, 255, 0.48);
         font-size: 11px;
         text-decoration: none;
+        transition: color 0.2s ease;
+      }
+
+      .footer-content a:not(.brand):hover {
+        color: white;
+      }
+
+      .footer-business {
+        padding: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        background: linear-gradient(
+          145deg,
+          rgba(243, 111, 50, 0.09),
+          rgba(255, 255, 255, 0.025)
+        );
+      }
+
+      .footer-business p {
+        max-width: 280px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.48);
+        font-size: 11px;
+        line-height: 1.7;
+      }
+
+      .footer-business-button {
+        display: inline-flex;
+        width: fit-content;
+        margin-top: 5px;
+        padding: 12px 16px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: white !important;
+        font-size: 10px !important;
+        font-weight: 950;
+        text-decoration: none;
+        transition: 0.25s ease;
+      }
+
+      .footer-business-button:hover {
+        background: var(--accent-dark);
+        transform: translateY(-2px);
+      }
+
+      .copyright-links {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .copyright-links a {
+        color: rgba(255, 255, 255, 0.38);
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+
+      .copyright-links a:hover {
+        color: white;
       }
 
       .copyright {
@@ -1454,6 +1581,17 @@ function GlobalStyles() {
         .footer-content {
           grid-template-columns: 1fr;
           gap: 35px;
+        }
+
+        .copyright {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .copyright-links {
+          flex-wrap: wrap;
+          gap: 12px 18px;
         }
       }
     `}</style>

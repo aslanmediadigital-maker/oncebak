@@ -1,0 +1,10 @@
+{
+  "name": "ÖnceBak",
+  "short_name": "ÖnceBak",
+  "description": "Kapadokya mekan rehberi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff6b26",
+  "icons": []
+}

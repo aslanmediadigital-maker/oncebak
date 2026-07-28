@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../../../lib/supabase";
+import AdminSidebar from "../components/AdminSidebar";
 
 type Category = {
   id: string | number;
@@ -150,28 +151,7 @@ export default function BusinessesPage() {
 
   return (
     <main className="admin-page">
-      <aside className="sidebar">
-        <div>
-          <Link href="/admin" className="brand">
-            Önce<span>Bak</span>
-          </Link>
-
-          <p className="panel-label">Yönetim Paneli</p>
-
-          <nav>
-            <Link href="/admin">Dashboard</Link>
-            <Link href="/admin/yeni-isletme">＋ Yeni İşletme</Link>
-            <Link href="/admin/isletmeler" className="active">
-              İşletmeler
-            </Link>
-            <Link href="/">Ana Siteyi Görüntüle</Link>
-          </nav>
-        </div>
-
-        <p className="sidebar-note">
-          İşletmeleri buradan görüntüleyebilir, düzenleyebilir ve silebilirsin.
-        </p>
-      </aside>
+      <AdminSidebar />
 
       <section className="workspace">
         <header className="page-header">

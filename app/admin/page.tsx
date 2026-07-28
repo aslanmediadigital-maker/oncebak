@@ -1,45 +1,29 @@
- "use client";
+"use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
+import AdminSidebar from "./components/AdminSidebar";
 
-type FormState = {
+type Business = {
+  id: string | number;
   name: string;
-  description: string;
+  slug: string;
+  region: string | null;
+  cover_image: string | null;
+  verified: boolean | null;
+  featured: boolean | null;
+  created_at: string | null;
+};
+
+type BusinessRequest = {
+  id: string;
+  business_name: string;
+  category: string;
   region: string;
-  address: string;
-  phone: string;
-  website: string;
-  instagram: string;
-  price: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
 };
-
-const initialForm: FormState = {
-  name: "",
-  description: "",
-  region: "",
-  address: "",
-  phone: "",
-  website: "",
-  instagram: "",
-  price: "",
-};
-
-function createSlug(value: string) {
-  return value
-    .toLocaleLowerCase("tr-TR")
-    .replace(/ı/g, "i")
-    .replace(/ğ/g, "g")
-    .replace(/ü/g, "u")
-    .replace(/ş/g, "s")
-    .replace(/ö/g, "o")
-    .replace(/ç/g, "c")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-}
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -49,11 +33,10 @@ export default function AdminPage() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
 
-  const [form, setForm] = useState<FormState>(initialForm);
-  const [image, setImage] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [requests, setRequests] = useState<BusinessRequest[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -63,10 +46,10 @@ export default function AdminPage() {
         data: { session: currentSession },
       } = await supabase.auth.getSession();
 
-      if (mounted) {
-        setSession(currentSession);
-        setAuthLoading(false);
-      }
+      if (!mounted) return;
+
+      setSession(currentSession);
+      setAuthLoading(false);
     }
 
     loadSession();
@@ -83,6 +66,46 @@ export default function AdminPage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!session) {
+      setDashboardLoading(false);
+      return;
+    }
+
+    async function loadDashboard() {
+      setDashboardLoading(true);
+      setDashboardError("");
+
+      const [businessResult, requestResult] = await Promise.all([
+        supabase
+          .from("businesses")
+          .select(
+            "id, name, slug, region, cover_image, verified, featured, created_at"
+          )
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("business_requests")
+          .select("id, business_name, category, region, status, created_at")
+          .order("created_at", { ascending: false }),
+      ]);
+
+      const errors = [
+        businessResult.error?.message,
+        requestResult.error?.message,
+      ].filter(Boolean);
+
+      if (errors.length > 0) {
+        setDashboardError(`Dashboard verileri alınamadı: ${errors.join(" | ")}`);
+      }
+
+      setBusinesses((businessResult.data ?? []) as Business[]);
+      setRequests((requestResult.data ?? []) as BusinessRequest[]);
+      setDashboardLoading(false);
+    }
+
+    loadDashboard();
+  }, [session]);
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,115 +133,29 @@ export default function AdminPage() {
     setLoginLoading(false);
   }
 
-  async function handleLogout() {
-    setAuthMessage("");
+  const stats = useMemo(
+    () => ({
+      totalBusinesses: businesses.length,
+      pendingRequests: requests.filter((item) => item.status === "pending")
+        .length,
+      approvedRequests: requests.filter((item) => item.status === "approved")
+        .length,
+      featuredBusinesses: businesses.filter((item) => item.featured).length,
+    }),
+    [businesses, requests]
+  );
 
-    const { error } = await supabase.auth.signOut({
-      scope: "local",
-    });
+  const recentRequests = requests.slice(0, 5);
+  const recentBusinesses = businesses.slice(0, 4);
 
-    if (error) {
-      setAuthMessage(`Çıkış yapılamadı: ${error.message}`);
-    }
-  }
+  function formatDate(value: string | null) {
+    if (!value) return "Tarih yok";
 
-  function updateField(field: keyof FormState, value: string) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setMessage("");
-    setSuccess(false);
-
-    if (!form.name.trim()) {
-      setMessage("İşletme adı zorunludur.");
-      return;
-    }
-
-    const price = Number(form.price);
-
-    if (form.price && (!Number.isFinite(price) || price < 0)) {
-      setMessage("Geçerli bir fiyat yazmalısın.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const slug = `${createSlug(form.name)}-${Date.now()}`;
-      let coverImage: string | null = null;
-
-      if (image) {
-        const extension = image.name.split(".").pop()?.toLowerCase() || "jpg";
-        const filePath = `businesses/${slug}.${extension}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("business-images")
-          .upload(filePath, image, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-        if (uploadError) {
-          throw new Error(`Fotoğraf yüklenemedi: ${uploadError.message}`);
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from("business-images")
-          .getPublicUrl(filePath);
-
-        coverImage = publicUrlData.publicUrl;
-      }
-
-      const { error: insertError } = await supabase
-        .from("businesses")
-        .insert({
-          name: form.name.trim(),
-          slug,
-          description: form.description.trim() || null,
-          region: form.region.trim() || null,
-          address: form.address.trim() || null,
-          phone: form.phone.trim() || null,
-          website: form.website.trim() || null,
-          instagram: form.instagram.trim() || null,
-          price_level: form.price ? price : null,
-          rating: 0,
-          verified: false,
-          featured: false,
-          cover_image: coverImage,
-        });
-
-      if (insertError) {
-        throw new Error(`İşletme kaydedilemedi: ${insertError.message}`);
-      }
-
-      setSuccess(true);
-      setMessage("İşletme başarıyla eklendi.");
-      setForm(initialForm);
-      setImage(null);
-
-      const fileInput = document.getElementById(
-        "business-image"
-      ) as HTMLInputElement | null;
-
-      if (fileInput) {
-        fileInput.value = "";
-      }
-    } catch (error) {
-      setSuccess(false);
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Beklenmeyen bir hata oluştu."
-      );
-    } finally {
-      setLoading(false);
-    }
+    return new Intl.DateTimeFormat("tr-TR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(new Date(value));
   }
 
   if (authLoading) {
@@ -265,9 +202,7 @@ export default function AdminPage() {
             />
           </label>
 
-          {authMessage && (
-            <div style={styles.authError}>{authMessage}</div>
-          )}
+          {authMessage && <div style={styles.authError}>{authMessage}</div>}
 
           <button
             type="submit"
@@ -291,236 +226,233 @@ export default function AdminPage() {
 
   return (
     <main style={styles.page}>
-      <aside style={styles.sidebar}>
-        <div>
-          <a href="/" style={styles.logo}>
-            Önce<span style={{ color: "#ff5a1f" }}>Bak</span>
-          </a>
-
-          <p style={styles.panelLabel}>Yönetim Paneli</p>
-
-          <nav style={styles.navigation}>
-            <a href="/admin" style={styles.activeNavigationItem}>
-              Dashboard
-            </a>
-
-            <a href="/admin/yeni-isletme" style={styles.navigationItem}>
-              ＋ Yeni İşletme
-            </a>
-
-            <a href="/admin/isletmeler" style={styles.navigationItem}>
-              İşletmeler
-            </a>
-
-            <a href="/" style={styles.navigationItem}>
-              Ana Siteyi Görüntüle
-            </a>
-          </nav>
-        </div>
-
-        <p style={styles.sidebarNote}>
-          İşletme bilgilerini buradan yönetebilirsin.
-        </p>
-      </aside>
+      <AdminSidebar />
 
       <section style={styles.content}>
-        <div style={styles.header}>
+        <header style={styles.header}>
           <div>
             <p style={styles.eyebrow}>ÖNCEBAK YÖNETİMİ</p>
-            <h1 style={styles.title}>Yeni işletme ekle</h1>
+            <h1 style={styles.title}>Dashboard</h1>
             <p style={styles.subtitle}>
-              İşletmenin temel bilgilerini ve kapak fotoğrafını ekle.
+              İşletmeleri, başvuruları ve platformun genel durumunu tek
+              ekrandan takip et.
             </p>
           </div>
 
-          <div style={styles.headerActions}>
-            <a href="/" style={styles.siteButton}>
-              Siteye Git →
-            </a>
+          <a href="/admin/yeni-isletme" style={styles.primaryButton}>
+            + Yeni İşletme
+          </a>
+        </header>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              style={styles.logoutButton}
-            >
-              Çıkış Yap
-            </button>
-          </div>
-        </div>
+        {dashboardError && (
+          <div style={styles.errorMessage}>{dashboardError}</div>
+        )}
 
-        <form onSubmit={handleSubmit} style={styles.formCard}>
+        <section style={styles.statsGrid}>
+          <StatCard
+            label="Toplam İşletme"
+            value={dashboardLoading ? "..." : stats.totalBusinesses}
+            description="Sistemde yayınlanan işletmeler"
+          />
+          <StatCard
+            label="Bekleyen Başvuru"
+            value={dashboardLoading ? "..." : stats.pendingRequests}
+            description="İncelenmeyi bekleyen başvurular"
+          />
+          <StatCard
+            label="Onaylanan Başvuru"
+            value={dashboardLoading ? "..." : stats.approvedRequests}
+            description="Onaylanmış işletme başvuruları"
+          />
+          <StatCard
+            label="Öne Çıkan"
+            value={dashboardLoading ? "..." : stats.featuredBusinesses}
+            description="Öne çıkan olarak işaretlenenler"
+          />
+        </section>
+
+        <section style={styles.dashboardGrid}>
+          <article style={styles.panelCard}>
+            <div style={styles.panelHeader}>
+              <div>
+                <h2 style={styles.panelTitle}>Son başvurular</h2>
+                <p style={styles.panelDescription}>
+                  En yeni işletme başvuruları.
+                </p>
+              </div>
+
+              <a href="/admin/basvurular" style={styles.inlineLink}>
+                Tümünü gör →
+              </a>
+            </div>
+
+            {dashboardLoading ? (
+              <div style={styles.emptyState}>Başvurular yükleniyor...</div>
+            ) : recentRequests.length === 0 ? (
+              <div style={styles.emptyState}>Henüz başvuru bulunmuyor.</div>
+            ) : (
+              <div>
+                {recentRequests.map((request) => (
+                  <div key={request.id} style={styles.requestRow}>
+                    <div>
+                      <strong style={styles.requestName}>
+                        {request.business_name}
+                      </strong>
+                      <span style={styles.requestMeta}>
+                        {request.category} · {request.region}
+                      </span>
+                    </div>
+
+                    <div style={styles.requestRight}>
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+                          ...(request.status === "approved"
+                            ? styles.approvedBadge
+                            : request.status === "rejected"
+                              ? styles.rejectedBadge
+                              : styles.pendingBadge),
+                        }}
+                      >
+                        {request.status === "approved"
+                          ? "Onaylandı"
+                          : request.status === "rejected"
+                            ? "Reddedildi"
+                            : "Bekliyor"}
+                      </span>
+                      <span style={styles.dateText}>
+                        {formatDate(request.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+
+          <article style={styles.quickCard}>
+            <p style={styles.eyebrow}>HIZLI İŞLEMLER</p>
+            <h2 style={styles.quickTitle}>Yönetimi hızlandır.</h2>
+            <p style={styles.quickDescription}>
+              En sık kullandığın yönetim işlemlerine doğrudan ulaş.
+            </p>
+
+            <div style={styles.quickLinks}>
+              <a href="/admin/basvurular" style={styles.quickLink}>
+                <span>📥</span>
+                Başvuruları incele
+              </a>
+              <a href="/admin/yeni-isletme" style={styles.quickLink}>
+                <span>➕</span>
+                Yeni işletme ekle
+              </a>
+              <a href="/admin/isletmeler" style={styles.quickLink}>
+                <span>🏢</span>
+                İşletmeleri yönet
+              </a>
+              <a href="/" style={styles.quickLink}>
+                <span>↗</span>
+                Ana siteyi görüntüle
+              </a>
+            </div>
+          </article>
+        </section>
+
+        <section style={styles.businessSection}>
           <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>İşletme bilgileri</h2>
-            <p style={styles.sectionDescription}>
-              Yıldızlı alanların doldurulması zorunludur.
-            </p>
+            <div>
+              <h2 style={styles.panelTitle}>Son eklenen işletmeler</h2>
+              <p style={styles.panelDescription}>
+                Sisteme en son kaydedilen işletmeler.
+              </p>
+            </div>
+
+            <a href="/admin/isletmeler" style={styles.inlineLink}>
+              Tüm işletmeler →
+            </a>
           </div>
 
-          <div style={styles.grid}>
-            <Field
-              label="İşletme adı *"
-              value={form.name}
-              placeholder="Örnek: Kapadokya Sofrası"
-              onChange={(value) => updateField("name", value)}
-              required
-            />
+          {dashboardLoading ? (
+            <div style={styles.emptyState}>İşletmeler yükleniyor...</div>
+          ) : recentBusinesses.length === 0 ? (
+            <div style={styles.emptyState}>Henüz işletme eklenmemiş.</div>
+          ) : (
+            <div style={styles.businessGrid}>
+              {recentBusinesses.map((business) => (
+                <article key={business.id} style={styles.businessCard}>
+                  <div style={styles.imageArea}>
+                    {business.cover_image ? (
+                      <img
+                        src={business.cover_image}
+                        alt={business.name}
+                        style={styles.businessImage}
+                      />
+                    ) : (
+                      <div style={styles.imagePlaceholder}>Fotoğraf yok</div>
+                    )}
+                  </div>
 
-            <Field
-              label="Bölge"
-              value={form.region}
-              placeholder="Örnek: Göreme"
-              onChange={(value) => updateField("region", value)}
-            />
+                  <div style={styles.businessBody}>
+                    <div style={styles.businessTop}>
+                      <div>
+                        <h3 style={styles.businessName}>{business.name}</h3>
+                        <p style={styles.businessRegion}>
+                          {business.region || "Bölge belirtilmedi"}
+                        </p>
+                      </div>
 
-            <Field
-              label="Adres"
-              value={form.address}
-              placeholder="Göreme / Nevşehir"
-              onChange={(value) => updateField("address", value)}
-            />
+                      <div style={styles.badgeGroup}>
+                        {business.featured && (
+                          <span style={styles.featuredBadge}>Öne çıkan</span>
+                        )}
+                        {business.verified && (
+                          <span style={styles.verifiedBadge}>Doğrulanmış</span>
+                        )}
+                      </div>
+                    </div>
 
-            <Field
-              label="Telefon"
-              value={form.phone}
-              placeholder="0555 000 00 00"
-              onChange={(value) => updateField("phone", value)}
-              type="tel"
-            />
-
-            <Field
-              label="Web sitesi"
-              value={form.website}
-              placeholder="https://..."
-              onChange={(value) => updateField("website", value)}
-              type="url"
-            />
-
-            <Field
-              label="Instagram"
-              value={form.instagram}
-              placeholder="@isletmeadi"
-              onChange={(value) => updateField("instagram", value)}
-            />
-
-            <Field
-              label="Kişi başı ortalama fiyat"
-              value={form.price}
-              placeholder="Örnek: 750"
-              onChange={(value) => updateField("price", value)}
-              type="number"
-            />
-
-            <label style={styles.field}>
-              <span style={styles.label}>Kapak fotoğrafı</span>
-
-              <input
-                id="business-image"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                onChange={(event) =>
-                  setImage(event.target.files?.[0] ?? null)
-                }
-                style={styles.fileInput}
-              />
-
-              <small style={styles.helpText}>
-                JPG, PNG veya WEBP yükleyebilirsin.
-              </small>
-            </label>
-          </div>
-
-          <label style={styles.field}>
-            <span style={styles.label}>Açıklama</span>
-
-            <textarea
-              value={form.description}
-              onChange={(event) =>
-                updateField("description", event.target.value)
-              }
-              placeholder="İşletmeyi kısa ve etkili biçimde tanıt."
-              rows={6}
-              style={{
-                ...styles.input,
-                resize: "vertical",
-                minHeight: "130px",
-              }}
-            />
-          </label>
-
-          {message && (
-            <div
-              style={{
-                ...styles.message,
-                background: success ? "#ecfdf3" : "#fff1f0",
-                color: success ? "#067647" : "#b42318",
-                borderColor: success ? "#abefc6" : "#fecdca",
-              }}
-            >
-              {message}
+                    <div style={styles.businessActions}>
+                      <a
+                        href={`/admin/isletmeler/${business.id}`}
+                        style={styles.editButton}
+                      >
+                        Düzenle
+                      </a>
+                      <a
+                        href={`/mekan/${business.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={styles.viewButton}
+                      >
+                        Görüntüle
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
-
-          <div style={styles.actions}>
-            <button
-              type="button"
-              onClick={() => {
-                setForm(initialForm);
-                setImage(null);
-                setMessage("");
-                setSuccess(false);
-              }}
-              style={styles.resetButton}
-              disabled={loading}
-            >
-              Formu Temizle
-            </button>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                ...styles.submitButton,
-                opacity: loading ? 0.65 : 1,
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
-              {loading ? "Kaydediliyor..." : "İşletmeyi Kaydet"}
-            </button>
-          </div>
-        </form>
+        </section>
       </section>
     </main>
   );
 }
 
-function Field({
+function StatCard({
   label,
   value,
-  placeholder,
-  onChange,
-  type = "text",
-  required = false,
+  description,
 }: {
   label: string;
-  value: string;
-  placeholder: string;
-  onChange: (value: string) => void;
-  type?: string;
-  required?: boolean;
+  value: string | number;
+  description: string;
 }) {
   return (
-    <label style={styles.field}>
-      <span style={styles.label}>{label}</span>
-
-      <input
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        required={required}
-        onChange={(event) => onChange(event.target.value)}
-        style={styles.input}
-      />
-    </label>
+    <article style={styles.statCard}>
+      <span style={styles.statLabel}>{label}</span>
+      <strong style={styles.statValue}>{value}</strong>
+      <p style={styles.statDescription}>{description}</p>
+    </article>
   );
 }
 
@@ -533,7 +465,6 @@ const styles = {
     background: "#f7f5f2",
     color: "#171717",
   },
-
   loginCard: {
     width: "100%",
     maxWidth: "420px",
@@ -543,213 +474,25 @@ const styles = {
     borderRadius: "22px",
     boxShadow: "0 20px 50px rgba(38, 30, 24, 0.08)",
   },
-
   loginLogo: {
     color: "#171717",
     textDecoration: "none",
     fontSize: "27px",
     fontWeight: 900,
   },
-
   loginSubtitle: {
     margin: "8px 0 28px",
     color: "#737373",
     fontSize: "14px",
   },
-
-  authError: {
-    marginTop: "18px",
-    padding: "13px 14px",
-    border: "1px solid #fecdca",
-    borderRadius: "11px",
-    background: "#fff1f0",
-    color: "#b42318",
-    fontWeight: 700,
-  },
-
-  loginButton: {
-    width: "100%",
-    marginTop: "20px",
-    padding: "14px",
-    border: "none",
-    borderRadius: "11px",
-    background: "#ff5a1f",
-    color: "#fff",
-    fontWeight: 900,
-  },
-
-  backLink: {
-    display: "block",
-    marginTop: "18px",
-    color: "#737373",
-    textAlign: "center" as const,
-    textDecoration: "none",
-    fontSize: "14px",
-  },
-
-  headerActions: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-
-  logoutButton: {
-    padding: "12px 18px",
-    border: "1px solid #e5e5e5",
-    borderRadius: "12px",
-    background: "#171717",
-    color: "#fff",
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-
-  page: {
-    minHeight: "100vh",
-    display: "grid",
-    gridTemplateColumns: "260px minmax(0, 1fr)",
-    background: "#f7f5f2",
-    color: "#171717",
-  },
-
-  sidebar: {
-    minHeight: "100vh",
-    padding: "32px 24px",
-    background: "#171717",
-    color: "#fff",
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: "space-between",
-  },
-
-  logo: {
-    color: "#fff",
-    textDecoration: "none",
-    fontSize: "26px",
-    fontWeight: 900,
-  },
-
-  panelLabel: {
-    marginTop: "8px",
-    color: "#a3a3a3",
-    fontSize: "13px",
-  },
-
-  navigation: {
-    marginTop: "42px",
-    display: "grid",
-    gap: "10px",
-  },
-
-  activeNavigationItem: {
-    padding: "14px 16px",
-    borderRadius: "12px",
-    background: "#ff5a1f",
-    color: "#fff",
-    textDecoration: "none",
-    fontWeight: 800,
-  },
-
-  navigationItem: {
-    padding: "14px 16px",
-    borderRadius: "12px",
-    color: "#d4d4d4",
-    textDecoration: "none",
-    fontWeight: 700,
-  },
-
-  sidebarNote: {
-    color: "#737373",
-    fontSize: "13px",
-    lineHeight: 1.6,
-  },
-
-  content: {
-    width: "100%",
-    maxWidth: "1150px",
-    margin: "0 auto",
-    padding: "48px 38px 80px",
-  },
-
-  header: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: "20px",
-    marginBottom: "28px",
-  },
-
-  eyebrow: {
-    margin: 0,
-    color: "#ff5a1f",
-    fontSize: "12px",
-    fontWeight: 900,
-    letterSpacing: "1.5px",
-  },
-
-  title: {
-    margin: "8px 0 10px",
-    fontSize: "36px",
-    lineHeight: 1.1,
-  },
-
-  subtitle: {
-    margin: 0,
-    color: "#737373",
-    lineHeight: 1.6,
-  },
-
-  siteButton: {
-    padding: "12px 18px",
-    background: "#fff",
-    border: "1px solid #e5e5e5",
-    borderRadius: "12px",
-    color: "#171717",
-    textDecoration: "none",
-    fontWeight: 800,
-  },
-
-  formCard: {
-    padding: "30px",
-    background: "#fff",
-    border: "1px solid #ebe8e4",
-    borderRadius: "22px",
-    boxShadow: "0 20px 50px rgba(38, 30, 24, 0.06)",
-  },
-
-  sectionHeader: {
-    marginBottom: "26px",
-    paddingBottom: "22px",
-    borderBottom: "1px solid #eee",
-  },
-
-  sectionTitle: {
-    margin: "0 0 6px",
-    fontSize: "22px",
-  },
-
-  sectionDescription: {
-    margin: 0,
-    color: "#737373",
-    fontSize: "14px",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: "20px",
-    marginBottom: "20px",
-  },
-
   field: {
     display: "grid",
     gap: "8px",
   },
-
   label: {
     fontSize: "14px",
     fontWeight: 800,
   },
-
   input: {
     width: "100%",
     boxSizing: "border-box" as const,
@@ -761,54 +504,353 @@ const styles = {
     fontSize: "15px",
     outline: "none",
   },
-
-  fileInput: {
-    width: "100%",
-    boxSizing: "border-box" as const,
-    padding: "11px",
-    border: "1px dashed #cfc9c2",
+  authError: {
+    marginTop: "18px",
+    padding: "13px 14px",
+    border: "1px solid #fecdca",
     borderRadius: "11px",
-    background: "#faf9f7",
-  },
-
-  helpText: {
-    color: "#8a8a8a",
-    fontSize: "12px",
-  },
-
-  message: {
-    marginTop: "20px",
-    padding: "14px 16px",
-    border: "1px solid",
-    borderRadius: "11px",
+    background: "#fff1f0",
+    color: "#b42318",
     fontWeight: 700,
   },
-
-  actions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "12px",
-    marginTop: "28px",
-    paddingTop: "24px",
-    borderTop: "1px solid #eee",
-  },
-
-  resetButton: {
-    padding: "13px 18px",
-    border: "1px solid #ddd",
-    borderRadius: "11px",
-    background: "#fff",
-    color: "#333",
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-
-  submitButton: {
-    padding: "13px 22px",
+  loginButton: {
+    width: "100%",
+    marginTop: "20px",
+    padding: "14px",
     border: "none",
     borderRadius: "11px",
     background: "#ff5a1f",
     color: "#fff",
     fontWeight: 900,
   },
+  backLink: {
+    display: "block",
+    marginTop: "18px",
+    color: "#737373",
+    textAlign: "center" as const,
+    textDecoration: "none",
+    fontSize: "14px",
+  },
+  page: {
+    minHeight: "100vh",
+    display: "grid",
+    gridTemplateColumns: "260px minmax(0, 1fr)",
+    background: "#f7f5f2",
+    color: "#171717",
+  },
+  content: {
+    width: "100%",
+    maxWidth: "1450px",
+    margin: "0 auto",
+    padding: "48px 38px 80px",
+  },
+  header: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "20px",
+    marginBottom: "28px",
+  },
+  eyebrow: {
+    margin: 0,
+    color: "#ff5a1f",
+    fontSize: "12px",
+    fontWeight: 900,
+    letterSpacing: "1.5px",
+  },
+  title: {
+    margin: "8px 0 10px",
+    fontSize: "38px",
+    lineHeight: 1.1,
+  },
+  subtitle: {
+    maxWidth: "700px",
+    margin: 0,
+    color: "#737373",
+    lineHeight: 1.6,
+  },
+  primaryButton: {
+    padding: "13px 18px",
+    borderRadius: "12px",
+    background: "#171717",
+    color: "#fff",
+    fontWeight: 900,
+    textDecoration: "none",
+  },
+  errorMessage: {
+    marginBottom: "20px",
+    padding: "15px 17px",
+    border: "1px solid #fecdca",
+    borderRadius: "12px",
+    background: "#fff1f0",
+    color: "#b42318",
+    fontWeight: 700,
+  },
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: "18px",
+    marginBottom: "24px",
+  },
+  statCard: {
+    padding: "24px",
+    border: "1px solid #ebe8e4",
+    borderRadius: "18px",
+    background: "#fff",
+    boxShadow: "0 14px 40px rgba(38, 30, 24, 0.05)",
+  },
+  statLabel: {
+    display: "block",
+    color: "#737373",
+    fontSize: "13px",
+    fontWeight: 800,
+  },
+  statValue: {
+    display: "block",
+    marginTop: "14px",
+    fontSize: "34px",
+    lineHeight: 1,
+  },
+  statDescription: {
+    margin: "10px 0 0",
+    color: "#8a8a8a",
+    fontSize: "12px",
+    lineHeight: 1.5,
+  },
+  dashboardGrid: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1.65fr) minmax(300px, 0.75fr)",
+    gap: "20px",
+    marginBottom: "24px",
+  },
+  panelCard: {
+    overflow: "hidden",
+    border: "1px solid #ebe8e4",
+    borderRadius: "22px",
+    background: "#fff",
+    boxShadow: "0 20px 50px rgba(38, 30, 24, 0.05)",
+  },
+  panelHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "20px",
+    padding: "24px",
+    borderBottom: "1px solid #eee",
+  },
+  panelTitle: {
+    margin: 0,
+    fontSize: "22px",
+  },
+  panelDescription: {
+    margin: "6px 0 0",
+    color: "#737373",
+    fontSize: "13px",
+  },
+  inlineLink: {
+    color: "#ff5a1f",
+    fontSize: "13px",
+    fontWeight: 900,
+    textDecoration: "none",
+  },
+  requestRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "18px",
+    padding: "17px 24px",
+    borderBottom: "1px solid #f0eeeb",
+  },
+  requestName: {
+    display: "block",
+    fontSize: "14px",
+  },
+  requestMeta: {
+    display: "block",
+    marginTop: "5px",
+    color: "#8a8a8a",
+    fontSize: "12px",
+  },
+  requestRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+  },
+  statusBadge: {
+    display: "inline-flex",
+    padding: "7px 10px",
+    borderRadius: "999px",
+    fontSize: "11px",
+    fontWeight: 900,
+  },
+  pendingBadge: {
+    background: "#fff3e8",
+    color: "#b54708",
+  },
+  approvedBadge: {
+    background: "#ecfdf3",
+    color: "#067647",
+  },
+  rejectedBadge: {
+    background: "#fff1f0",
+    color: "#b42318",
+  },
+  dateText: {
+    color: "#8a8a8a",
+    fontSize: "11px",
+  },
+  quickCard: {
+    padding: "26px",
+    borderRadius: "22px",
+    background: "#171717",
+    color: "#fff",
+    boxShadow: "0 20px 50px rgba(38, 30, 24, 0.12)",
+  },
+  quickTitle: {
+    margin: "10px 0 8px",
+    fontSize: "27px",
+  },
+  quickDescription: {
+    margin: 0,
+    color: "#a3a3a3",
+    fontSize: "13px",
+    lineHeight: 1.6,
+  },
+  quickLinks: {
+    display: "grid",
+    gap: "10px",
+    marginTop: "24px",
+  },
+  quickLink: {
+    display: "flex",
+    alignItems: "center",
+    gap: "11px",
+    padding: "13px 14px",
+    border: "1px solid #353535",
+    borderRadius: "12px",
+    background: "#242424",
+    color: "#fff",
+    fontSize: "13px",
+    fontWeight: 800,
+    textDecoration: "none",
+  },
+  businessSection: {
+    padding: "26px",
+    border: "1px solid #ebe8e4",
+    borderRadius: "22px",
+    background: "#fff",
+    boxShadow: "0 20px 50px rgba(38, 30, 24, 0.05)",
+  },
+  sectionHeader: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: "20px",
+    marginBottom: "20px",
+  },
+  businessGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    gap: "16px",
+  },
+  businessCard: {
+    overflow: "hidden",
+    border: "1px solid #ebe8e4",
+    borderRadius: "17px",
+    background: "#fff",
+  },
+  imageArea: {
+    aspectRatio: "16 / 10",
+    background: "#efede9",
+  },
+  businessImage: {
+    width: "100%",
+    height: "100%",
+    display: "block",
+    objectFit: "cover" as const,
+  },
+  imagePlaceholder: {
+    width: "100%",
+    height: "100%",
+    display: "grid",
+    placeItems: "center",
+    color: "#8a8a8a",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+  businessBody: {
+    padding: "15px",
+  },
+  businessTop: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "10px",
+  },
+  businessName: {
+    margin: 0,
+    fontSize: "16px",
+  },
+  businessRegion: {
+    margin: "5px 0 0",
+    color: "#ff5a1f",
+    fontSize: "12px",
+    fontWeight: 800,
+  },
+  badgeGroup: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    justifyContent: "flex-end",
+    gap: "5px",
+  },
+  featuredBadge: {
+    padding: "5px 7px",
+    borderRadius: "999px",
+    background: "#fff4ed",
+    color: "#c4320a",
+    fontSize: "9px",
+    fontWeight: 800,
+  },
+  verifiedBadge: {
+    padding: "5px 7px",
+    borderRadius: "999px",
+    background: "#eff8ff",
+    color: "#175cd3",
+    fontSize: "9px",
+    fontWeight: 800,
+  },
+  businessActions: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "8px",
+    marginTop: "15px",
+  },
+  editButton: {
+    padding: "9px 10px",
+    border: "1px solid #fedf89",
+    borderRadius: "9px",
+    background: "#fffaeb",
+    color: "#b54708",
+    textAlign: "center" as const,
+    textDecoration: "none",
+    fontSize: "11px",
+    fontWeight: 800,
+  },
+  viewButton: {
+    padding: "9px 10px",
+    border: "1px solid #dedbd7",
+    borderRadius: "9px",
+    color: "#171717",
+    textAlign: "center" as const,
+    textDecoration: "none",
+    fontSize: "11px",
+    fontWeight: 800,
+  },
+  emptyState: {
+    padding: "40px 24px",
+    color: "#737373",
+    textAlign: "center" as const,
+    fontWeight: 700,
+  },
 };
+

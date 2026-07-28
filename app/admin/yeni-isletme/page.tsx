@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import AdminSidebar from "../components/AdminSidebar";
 
 type Category = {
   id: string | number;
@@ -314,20 +315,7 @@ export default function NewBusinessPage() {
 
   return (
     <main className="admin-page">
-      <aside className="sidebar">
-        <a href="/admin" className="brand">
-          Önce<span>Bak</span>
-        </a>
-
-        <nav>
-          <a href="/admin">Dashboard</a>
-          <a href="/admin/yeni-isletme" className="active">
-            Yeni İşletme
-          </a>
-          <a href="/admin/isletmeler">İşletmeler</a>
-          <a href="/">Ana Siteyi Görüntüle</a>
-        </nav>
-      </aside>
+      <AdminSidebar />
 
       <section className="workspace">
         <header className="page-header">
