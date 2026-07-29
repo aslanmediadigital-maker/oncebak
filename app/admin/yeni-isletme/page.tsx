@@ -12,6 +12,12 @@ type Category = {
 
 type OpeningHours = Record<string, string>;
 
+type MenuImageItem = {
+  id: string;
+  file: File;
+  url: string;
+};
+
 const REGIONS = [
   "Nevşehir",
   "Göreme",
@@ -113,7 +119,9 @@ export default function NewBusinessPage() {
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [menuImageItems, setMenuImageItems] = useState<MenuImageItem[]>([]);
   const [menuFile, setMenuFile] = useState<File | null>(null);
+  const [menuExternalUrl, setMenuExternalUrl] = useState("");
 
   const coverPreview = useMemo(
     () => (coverFile ? URL.createObjectURL(coverFile) : ""),
@@ -185,6 +193,40 @@ export default function NewBusinessPage() {
 
   function removeGalleryFile(index: number) {
     setGalleryFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function handleMenuImages(event: ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []).filter((file) =>
+      file.type.startsWith("image/")
+    );
+
+    setMenuImageItems((current) => [
+      ...current,
+      ...selected.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        url: URL.createObjectURL(file),
+      })),
+    ]);
+    event.target.value = "";
+  }
+
+  function removeMenuImage(id: string) {
+    setMenuImageItems((current) => {
+      const removed = current.find((item) => item.id === id);
+      if (removed) URL.revokeObjectURL(removed.url);
+      return current.filter((item) => item.id !== id);
+    });
+  }
+
+  function moveMenuImage(index: number, direction: -1 | 1) {
+    setMenuImageItems((current) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= current.length) return current;
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
   }
 
   async function uploadFile(file: File, path: string) {
@@ -261,7 +303,15 @@ export default function NewBusinessPage() {
         galleryUrls.push(await uploadFile(file, path));
       }
 
-      let menuUrl: string | null = null;
+      const menuImages: string[] = [];
+      for (const item of menuImageItems) {
+        const menuImagePath = `${folder}/menu/${crypto.randomUUID()}-${sanitizeFileName(
+          item.file.name
+        )}`;
+        menuImages.push(await uploadFile(item.file, menuImagePath));
+      }
+
+      let menuUrl: string | null = menuExternalUrl.trim() || null;
       if (menuFile) {
         const menuPath = `${folder}/menu/${crypto.randomUUID()}-${sanitizeFileName(
           menuFile.name
@@ -284,6 +334,9 @@ export default function NewBusinessPage() {
         cover_image: coverImage,
         gallery: galleryUrls,
         menu_url: menuUrl,
+        menu_images: menuImages,
+        menu_updated_at:
+          menuImages.length > 0 || menuUrl ? new Date().toISOString() : null,
         opening_hours: openingHours,
         features,
         price_level: priceLevel ? Number(priceLevel) : null,
@@ -498,14 +551,40 @@ export default function NewBusinessPage() {
               />
 
               <UploadBox
-                title="Menü dosyası"
-                description="PDF, JPG, PNG veya WEBP"
-                accept="application/pdf,image/jpeg,image/png,image/webp"
+                title="Menü fotoğrafları"
+                description="JPG, PNG, WEBP veya AVIF · birden fazla seçilebilir"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                multiple
+                onChange={handleMenuImages}
+              />
+
+              <UploadBox
+                title="PDF menü"
+                description="İsteğe bağlı PDF dosyası"
+                accept="application/pdf"
                 onChange={(event) => setMenuFile(event.target.files?.[0] ?? null)}
               />
             </div>
 
-            {(coverPreview || galleryPreviews.length > 0 || menuPreview) && (
+            <div className="form-grid two menu-legacy-fields">
+              <Field
+                label="Harici menü bağlantısı"
+                hint="PDF yüklemediysen isteğe bağlı"
+                className="full"
+              >
+                <input
+                  type="url"
+                  value={menuExternalUrl}
+                  onChange={(event) => setMenuExternalUrl(event.target.value)}
+                  placeholder="https://..."
+                />
+              </Field>
+            </div>
+
+            {(coverPreview ||
+              galleryPreviews.length > 0 ||
+              menuImageItems.length > 0 ||
+              menuPreview) && (
               <div className="preview-area">
                 {coverPreview && (
                   <div className="preview-block">
@@ -532,6 +611,49 @@ export default function NewBusinessPage() {
                           <button type="button" onClick={() => removeGalleryFile(index)}>
                             ×
                           </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {menuImageItems.length > 0 && (
+                  <div className="preview-block">
+                    <div className="preview-title">
+                      <strong>Menü sayfaları ({menuImageItems.length})</strong>
+                      <span>Kaydedilen sıra soldan sağa ilerler.</span>
+                    </div>
+
+                    <div className="menu-gallery-editor">
+                      {menuImageItems.map((item, index) => (
+                        <div className="menu-gallery-editor__item" key={item.id}>
+                          <img src={item.url} alt={`Menü sayfası ${index + 1}`} />
+                          <span>{index + 1}</span>
+                          <div className="menu-gallery-editor__actions">
+                            <button
+                              type="button"
+                              onClick={() => moveMenuImage(index, -1)}
+                              disabled={index === 0}
+                              aria-label={`${index + 1}. menü sayfasını yukarı taşı`}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveMenuImage(index, 1)}
+                              disabled={index === menuImageItems.length - 1}
+                              aria-label={`${index + 1}. menü sayfasını aşağı taşı`}
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeMenuImage(item.id)}
+                              aria-label={`${index + 1}. menü sayfasını sil`}
+                            >
+                              Sil
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

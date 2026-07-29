@@ -1,12 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { supabase } from "@/lib/supabase";
+import SiteFooter from "./components/SiteFooter";
+import SiteHeader from "./components/SiteHeader";
 
 type Category = {
   id: string | number;
   name: string;
+};
+
+type DropdownOption = {
+  value: string;
+  label: string;
 };
 
 type Business = {
@@ -22,6 +36,8 @@ type Business = {
   featured: boolean | null;
   cover_image: string | null;
   menu_url: string | null;
+  menu_images: string[] | null;
+  menu_updated_at: string | null;
   category_id: string | number | null;
   categories: Category | Category[] | null;
 };
@@ -82,6 +98,146 @@ function fallbackImage(name: string) {
   return `https://placehold.co/1200x800/181310/fff7ef?text=${letter}`;
 }
 
+function PremiumSearchDropdown({
+  id,
+  label,
+  value,
+  options,
+  isOpen,
+  onOpen,
+  onClose,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: DropdownOption[];
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  onChange: (value: string) => void;
+}) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value)
+  );
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
+  const selectedOption = options[selectedIndex] ?? options[0];
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveIndex(selectedIndex);
+    window.requestAnimationFrame(() => listboxRef.current?.focus());
+  }, [isOpen, selectedIndex]);
+
+  function selectOption(index: number) {
+    const option = options[index];
+    if (!option) return;
+    onChange(option.value);
+    onClose();
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
+  function handleTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      onOpen();
+    } else if (event.key === "Escape" && isOpen) {
+      event.preventDefault();
+      onClose();
+    }
+  }
+
+  function handleListboxKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((current) => (current + 1) % options.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex(
+        (current) => (current - 1 + options.length) % options.length
+      );
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      selectOption(activeIndex);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      onClose();
+      triggerRef.current?.focus();
+    } else if (event.key === "Tab") {
+      onClose();
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setActiveIndex(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setActiveIndex(options.length - 1);
+    }
+  }
+
+  return (
+    <div className="ob-premium-filter">
+      <span className="ob-premium-filter__label">{label}</span>
+      <button
+        type="button"
+        ref={triggerRef}
+        className="ob-premium-filter__trigger"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={`${id}-listbox`}
+        onClick={() => (isOpen ? onClose() : onOpen())}
+        onKeyDown={handleTriggerKeyDown}
+      >
+        <span>{selectedOption?.label ?? ""}</span>
+        <span className="ob-premium-filter__chevron" aria-hidden="true" />
+      </button>
+
+      <div
+        id={`${id}-listbox`}
+        ref={listboxRef}
+        className="ob-premium-filter__panel"
+        role="listbox"
+        tabIndex={isOpen ? 0 : -1}
+        aria-label={label}
+        aria-activedescendant={`${id}-option-${activeIndex}`}
+        aria-hidden={!isOpen}
+        data-open={isOpen ? "true" : "false"}
+        onKeyDown={handleListboxKeyDown}
+      >
+        {options.map((option, index) => {
+          const selected = option.value === value;
+          const active = index === activeIndex;
+
+          return (
+            <button
+              type="button"
+              id={`${id}-option-${index}`}
+              role="option"
+              tabIndex={-1}
+              aria-selected={selected}
+              className={`ob-premium-filter__option${selected ? " is-selected" : ""}${
+                active ? " is-active" : ""
+              }`}
+              key={option.value}
+              onMouseEnter={() => setActiveIndex(index)}
+              onClick={() => selectOption(index)}
+            >
+              <span>{option.label}</span>
+              {selected && (
+                <span className="ob-premium-filter__check" aria-hidden="true">
+                  ✓
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -95,18 +251,24 @@ export default function HomePage() {
   const [activeRegion, setActiveRegion] = useState("Tüm Bölgeler");
   const [activeCategory, setActiveCategory] = useState("Tüm Kategoriler");
   const [showAll, setShowAll] = useState(false);
-  const [navScrolled, setNavScrolled] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<
+    "region" | "category" | null
+  >(null);
+  const searchPanelRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    function handleScroll() {
-      setNavScrolled(window.scrollY > 24);
+    function handleOutsidePointer(event: PointerEvent) {
+      if (
+        searchPanelRef.current &&
+        !searchPanelRef.current.contains(event.target as Node)
+      ) {
+        setOpenDropdown(null);
+      }
     }
 
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
+    document.addEventListener("pointerdown", handleOutsidePointer);
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("pointerdown", handleOutsidePointer);
     };
   }, []);
 
@@ -183,6 +345,22 @@ export default function HomePage() {
     return counts;
   }, [businesses]);
 
+  const regionOptions = useMemo(
+    () => REGIONS.map((item) => ({ value: item, label: item })),
+    []
+  );
+
+  const categoryOptions = useMemo(
+    () => [
+      { value: "Tüm Kategoriler", label: "Tüm Kategoriler" },
+      ...categories.map((category) => ({
+        value: String(category.id),
+        label: category.name,
+      })),
+    ],
+    [categories]
+  );
+
   const filteredBusinesses = useMemo(() => {
     const query = activeQuery.trim().toLocaleLowerCase("tr-TR");
 
@@ -238,25 +416,7 @@ export default function HomePage() {
 
   return (
     <main>
-      <header className={`topbar ${navScrolled ? "scrolled" : ""}`}>
-        <div className="shell nav">
-          <Link href="/" className="brand" aria-label="ÖnceBak ana sayfa">
-            Önce<span>Bak</span>
-            <small>Gitmeden önce bak.</small>
-          </Link>
-
-          <nav className="nav-links" aria-label="Ana menü">
-            <Link href="/">Ana Sayfa</Link>
-            <Link href="#mekanlar">Mekânlar</Link>
-            <Link href="#kategoriler">Kategoriler</Link>
-            <Link href="#nasil-calisir">Nasıl Çalışır?</Link>
-          </nav>
-
-          <Link href="/iletisim" className="business-link">
-            İşletmeni Tanıt
-          </Link>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="hero">
         <div className="hero-overlay" />
@@ -274,7 +434,11 @@ export default function HomePage() {
             menüleri ve gerçek işletme bilgileriyle keşfet.
           </p>
 
-          <form className="search-panel" onSubmit={handleSearch}>
+          <form
+            className="search-panel"
+            ref={searchPanelRef}
+            onSubmit={handleSearch}
+          >
             <label>
               <span>Nereye veya neye bakıyorsun?</span>
               <input
@@ -284,34 +448,27 @@ export default function HomePage() {
               />
             </label>
 
-            <label>
-              <span>Bölge</span>
-              <select
-                value={region}
-                onChange={(event) => setRegion(event.target.value)}
-              >
-                {REGIONS.map((item) => (
-                  <option value={item} key={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <PremiumSearchDropdown
+              id="ob-region-filter"
+              label="Bölge"
+              value={region}
+              options={regionOptions}
+              isOpen={openDropdown === "region"}
+              onOpen={() => setOpenDropdown("region")}
+              onClose={() => setOpenDropdown(null)}
+              onChange={setRegion}
+            />
 
-            <label>
-              <span>Kategori</span>
-              <select
-                value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value)}
-              >
-                <option value="Tüm Kategoriler">Tüm Kategoriler</option>
-                {categories.map((category) => (
-                  <option value={String(category.id)} key={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <PremiumSearchDropdown
+              id="ob-category-filter"
+              label="Kategori"
+              value={categoryId}
+              options={categoryOptions}
+              isOpen={openDropdown === "category"}
+              onOpen={() => setOpenDropdown("category")}
+              onClose={() => setOpenDropdown(null)}
+              onChange={setCategoryId}
+            />
 
             <button type="submit">Ara →</button>
           </form>
@@ -539,55 +696,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer>
-        <div className="shell footer-content">
-          <div>
-            <Link href="/" className="brand footer-brand">
-              Önce<span>Bak</span>
-            </Link>
-            <p>
-              Kapadokya&apos;daki restoranları, kafeleri ve aktiviteleri güncel
-              bilgilerle keşfet. Gitmeden önce bak, sürpriz yaşamadan karar ver.
-            </p>
-          </div>
-
-          <div>
-            <strong>Keşfet</strong>
-            <Link href="/#mekanlar">Mekânlar</Link>
-            <Link href="/#kategoriler">Kategoriler</Link>
-            <Link href="/#nasil-calisir">Nasıl Çalışır?</Link>
-          </div>
-
-          <div>
-            <strong>Kurumsal</strong>
-            <Link href="/hakkimizda">Hakkımızda</Link>
-            <Link href="/gizlilik">Gizlilik Politikası</Link>
-            <Link href="/kullanim-sartlari">Kullanım Şartları</Link>
-            <Link href="/iletisim">İletişim</Link>
-          </div>
-
-          <div className="footer-business">
-            <strong>İşletme Sahibi misiniz?</strong>
-            <p>
-              İşletmenizi ÖnceBak&apos;ta tanıtın ve Kapadokya&apos;yı keşfeden
-              daha fazla kişiye ulaşın.
-            </p>
-            <Link href="/iletisim" className="footer-business-button">
-              İşletmeni Tanıt →
-            </Link>
-          </div>
-        </div>
-
-        <div className="shell copyright">
-          <span>© {new Date().getFullYear()} ÖnceBak. Tüm hakları saklıdır.</span>
-          <div className="copyright-links">
-            <Link href="/hakkimizda">Hakkımızda</Link>
-            <Link href="/gizlilik">Gizlilik</Link>
-            <Link href="/kullanim-sartlari">Kullanım Şartları</Link>
-            <Link href="/iletisim">İletişim</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
 
       <GlobalStyles />
     </main>
@@ -749,10 +858,11 @@ function GlobalStyles() {
 
       .hero {
         position: relative;
+        z-index: 1;
         min-height: 760px;
         display: flex;
         align-items: center;
-        overflow: hidden;
+        overflow: visible;
         background:
           url("https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=2200&q=88")
           center/cover no-repeat;
@@ -830,8 +940,7 @@ function GlobalStyles() {
         text-transform: uppercase;
       }
 
-      .search-panel input,
-      .search-panel select {
+      .search-panel input {
         width: 100%;
         min-width: 0;
         padding: 8px 0;
@@ -843,7 +952,7 @@ function GlobalStyles() {
         font-weight: 800;
       }
 
-      .search-panel button {
+      .search-panel > button[type="submit"] {
         min-height: 58px;
         padding: 0 30px;
         border: 0;
@@ -855,7 +964,7 @@ function GlobalStyles() {
         cursor: pointer;
       }
 
-      .search-panel button:hover {
+      .search-panel > button[type="submit"]:hover {
         background: var(--accent-dark);
       }
 
@@ -1443,7 +1552,7 @@ function GlobalStyles() {
           grid-template-columns: 1fr 1fr;
         }
 
-        .search-panel button {
+        .search-panel > button[type="submit"] {
           grid-column: span 2;
         }
 
@@ -1504,7 +1613,7 @@ function GlobalStyles() {
           border-radius: 18px;
         }
 
-        .search-panel button {
+        .search-panel > button[type="submit"] {
           grid-column: auto;
         }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
@@ -17,6 +17,8 @@ type Business = {
   website: string | null;
   google_maps_url: string | null;
   menu_url: string | null;
+  menu_images: string[] | null;
+  menu_updated_at: string | null;
   opening_hours: Record<string, string> | null;
   features: string[] | null;
   gallery: string[] | null;
@@ -69,6 +71,17 @@ function isImageUrl(value: string | null) {
   return /\.(?:png|jpe?g|webp|gif|avif)(?:$|[?#])/i.test(value);
 }
 
+function formatMenuDate(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 export default function BusinessDetailPage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
@@ -79,6 +92,13 @@ export default function BusinessDetailPage() {
   const [message, setMessage] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [favorite, setFavorite] = useState(false);
+  const [menuViewerOpen, setMenuViewerOpen] = useState(false);
+  const [menuPageIndex, setMenuPageIndex] = useState(0);
+  const [failedMenuImages, setFailedMenuImages] = useState<string[]>([]);
+  const menuCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const menuDialogRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuTouchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -92,7 +112,7 @@ export default function BusinessDetailPage() {
       const { data, error } = await supabase
         .from("businesses")
         .select(
-          "id, name, slug, description, region, address, phone, whatsapp, instagram, website, google_maps_url, menu_url, opening_hours, features, gallery, price_level, rating, verified, featured, cover_image, categories(name)"
+          "id, name, slug, description, region, address, phone, whatsapp, instagram, website, google_maps_url, menu_url, menu_images, menu_updated_at, opening_hours, features, gallery, price_level, rating, verified, featured, cover_image, categories(name)"
         )
         .eq("slug", slug)
         .single();
@@ -123,7 +143,7 @@ export default function BusinessDetailPage() {
       const { data: similarData } = await supabase
         .from("businesses")
         .select(
-          "id, name, slug, description, region, address, phone, whatsapp, instagram, website, google_maps_url, menu_url, opening_hours, features, gallery, price_level, rating, verified, featured, cover_image, categories(name)"
+          "id, name, slug, description, region, address, phone, whatsapp, instagram, website, google_maps_url, menu_url, menu_images, menu_updated_at, opening_hours, features, gallery, price_level, rating, verified, featured, cover_image, categories(name)"
         )
         .neq("id", current.id)
         .limit(3);
@@ -156,6 +176,111 @@ export default function BusinessDetailPage() {
 
     return Array.from(new Set(images));
   }, [business]);
+
+  const menuImages = useMemo(() => {
+    if (!business) return [];
+    const galleryMenuImages = Array.isArray(business.menu_images)
+      ? business.menu_images.filter(
+          (item): item is string =>
+            typeof item === "string" &&
+            isImageUrl(item) &&
+            !failedMenuImages.includes(item)
+        )
+      : [];
+
+    if (galleryMenuImages.length > 0) return galleryMenuImages;
+    if (
+      isImageUrl(business.menu_url) &&
+      !failedMenuImages.includes(business.menu_url as string)
+    ) {
+      return [business.menu_url as string];
+    }
+    return [];
+  }, [business, failedMenuImages]);
+
+  const legacyMenuUrl =
+    business?.menu_url && !isImageUrl(business.menu_url)
+      ? business.menu_url
+      : null;
+  const menuUpdatedLabel = formatMenuDate(business?.menu_updated_at ?? null);
+  const hasMenu = menuImages.length > 0 || Boolean(legacyMenuUrl);
+
+  useEffect(() => {
+    if (!menuViewerOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    menuCloseButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuViewerOpen(false);
+      } else if (event.key === "ArrowRight") {
+        setMenuPageIndex((current) =>
+          menuImages.length ? (current + 1) % menuImages.length : 0
+        );
+      } else if (event.key === "ArrowLeft") {
+        setMenuPageIndex((current) =>
+          menuImages.length
+            ? (current - 1 + menuImages.length) % menuImages.length
+            : 0
+        );
+      } else if (event.key === "Tab") {
+        const focusable = Array.from(
+          menuDialogRef.current?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+          ) ?? []
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      menuTriggerRef.current?.focus();
+    };
+  }, [menuViewerOpen, menuImages.length]);
+
+  useEffect(() => {
+    if (menuPageIndex >= menuImages.length) {
+      setMenuPageIndex(Math.max(0, menuImages.length - 1));
+    }
+    if (menuViewerOpen && menuImages.length === 0) {
+      setMenuViewerOpen(false);
+    }
+  }, [menuImages.length, menuPageIndex, menuViewerOpen]);
+
+  function markMenuImageFailed(url: string) {
+    setFailedMenuImages((current) =>
+      current.includes(url) ? current : [...current, url]
+    );
+  }
+
+  function openMenuViewer() {
+    setMenuPageIndex(0);
+    setMenuViewerOpen(true);
+  }
+
+  function showPreviousMenuPage() {
+    setMenuPageIndex((current) =>
+      (current - 1 + menuImages.length) % menuImages.length
+    );
+  }
+
+  function showNextMenuPage() {
+    setMenuPageIndex((current) => (current + 1) % menuImages.length);
+  }
 
   function toggleFavorite() {
     if (!business) return;
@@ -280,7 +405,7 @@ export default function BusinessDetailPage() {
                 </a>
               )}
 
-              {business.menu_url && (
+              {hasMenu && (
                 <a
                   href="#menu"
                   className="action secondary"
@@ -365,49 +490,77 @@ export default function BusinessDetailPage() {
               </section>
             )}
 
-            {business.menu_url && (
-              <section className="menu-card" id="menu">
-                <div className="menu-copy">
-                  <span className="eyebrow light">GÜNCEL MENÜ</span>
-                  <h2>Gitmeden önce menüye göz at.</h2>
-                  <p>Ürünleri ve fiyatları işletmenin güncel menüsünden incele.</p>
+            {hasMenu && (
+              <section className="ob-menu-card" id="menu">
+                <div className="ob-menu-card__copy">
+                  <span className="ob-menu-card__eyebrow">MENÜ &amp; FİYATLAR</span>
+                  <h2>Güncel menüyü inceleyin</h2>
+                  {menuUpdatedLabel && (
+                    <p className="ob-menu-card__date">
+                      Son güncelleme: {menuUpdatedLabel}
+                    </p>
+                  )}
+                  <p>
+                    Ürünleri ve güncel fiyatları menü sayfaları arasında rahatça
+                    gezinerek inceleyin.
+                  </p>
 
-                  <a href={business.menu_url} target="_blank" rel="noreferrer">
-                    Menüyü Tam Ekran Aç →
-                  </a>
+                  {menuImages.length > 0 && (
+                    <span className="ob-menu-card__count">
+                      {menuImages.length} menü sayfası
+                    </span>
+                  )}
+
+                  <div className="ob-menu-card__actions">
+                    {menuImages.length > 0 && (
+                      <button
+                        type="button"
+                        ref={menuTriggerRef}
+                        onClick={openMenuViewer}
+                        className="ob-menu-card__primary"
+                      >
+                        Menüyü Görüntüle
+                      </button>
+                    )}
+                    {legacyMenuUrl && (
+                      <a
+                        href={legacyMenuUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ob-menu-card__secondary"
+                      >
+                        {isPdfUrl(legacyMenuUrl)
+                          ? "PDF Olarak Aç"
+                          : "Harici Menüyü Aç"}
+                      </a>
+                    )}
+                  </div>
                 </div>
 
-                {isPdfUrl(business.menu_url) ? (
-                  <div className="menu-preview pdf-preview">
-                    <iframe
-                      src={`${business.menu_url}#toolbar=0&navpanes=0`}
-                      title={`${business.name} menüsü`}
-                      loading="lazy"
-                    />
-                  </div>
-                ) : isImageUrl(business.menu_url) ? (
-                  <a
-                    href={business.menu_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="menu-preview"
+                {menuImages.length > 0 ? (
+                  <button
+                    type="button"
+                    className="ob-menu-card__preview"
+                    onClick={openMenuViewer}
+                    aria-label={`${business.name} menüsünü görüntüle`}
                   >
                     <img
-                      src={business.menu_url}
-                      alt={`${business.name} menüsü`}
+                      src={menuImages[0]}
+                      alt={`${business.name} menü önizlemesi`}
                       loading="lazy"
+                      onError={() => markMenuImageFailed(menuImages[0])}
                     />
-                  </a>
+                    <span>Menüyü aç</span>
+                  </button>
                 ) : (
                   <a
-                    href={business.menu_url}
+                    href={legacyMenuUrl || "#"}
                     target="_blank"
                     rel="noreferrer"
-                    className="menu-external"
+                    className="ob-menu-card__external"
                   >
-                    <span>MENÜ</span>
-                    <strong>İşletmenin güncel menüsünü aç</strong>
-                    <small>Yeni sekmede görüntülenir →</small>
+                    <span>{isPdfUrl(legacyMenuUrl) ? "PDF MENÜ" : "MENÜ"}</span>
+                    <strong>Güncel menüyü yeni sekmede açın</strong>
                   </a>
                 )}
               </section>
@@ -567,6 +720,120 @@ export default function BusinessDetailPage() {
           <span className="lightbox-counter">
             {lightboxIndex + 1} / {gallery.length}
           </span>
+        </div>
+      )}
+
+      {menuViewerOpen && menuImages[menuPageIndex] && (
+        <div
+          className="ob-menu-viewer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ob-menu-viewer-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setMenuViewerOpen(false);
+          }}
+        >
+          <div
+            className="ob-menu-viewer__panel"
+            ref={menuDialogRef}
+            onTouchStart={(event) => {
+              menuTouchStartX.current = event.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              const startX = menuTouchStartX.current;
+              const endX = event.changedTouches[0]?.clientX;
+              menuTouchStartX.current = null;
+              if (
+                startX === null ||
+                endX === undefined ||
+                Math.abs(startX - endX) < 45 ||
+                menuImages.length < 2
+              ) {
+                return;
+              }
+              if (startX > endX) showNextMenuPage();
+              else showPreviousMenuPage();
+            }}
+          >
+            <header className="ob-menu-viewer__header">
+              <div>
+                <span>MENÜ &amp; FİYATLAR</span>
+                <strong id="ob-menu-viewer-title">{business.name}</strong>
+              </div>
+              <span className="ob-menu-viewer__counter" aria-live="polite">
+                {menuPageIndex + 1} / {menuImages.length}
+              </span>
+              <button
+                type="button"
+                ref={menuCloseButtonRef}
+                className="ob-menu-viewer__close"
+                onClick={() => setMenuViewerOpen(false)}
+                aria-label="Menü görüntüleyiciyi kapat"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className="ob-menu-viewer__stage">
+              {menuImages.length > 1 && (
+                <button
+                  type="button"
+                  className="ob-menu-viewer__arrow ob-menu-viewer__arrow--left"
+                  onClick={showPreviousMenuPage}
+                  aria-label="Önceki menü sayfası"
+                >
+                  ‹
+                </button>
+              )}
+
+              <img
+                className="ob-menu-viewer__image"
+                src={menuImages[menuPageIndex]}
+                alt={`${business.name} menü sayfası ${menuPageIndex + 1}`}
+                onError={() => markMenuImageFailed(menuImages[menuPageIndex])}
+              />
+
+              {menuImages.length > 1 && (
+                <button
+                  type="button"
+                  className="ob-menu-viewer__arrow ob-menu-viewer__arrow--right"
+                  onClick={showNextMenuPage}
+                  aria-label="Sonraki menü sayfası"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+
+            {menuImages.length > 1 && (
+              <div
+                className="ob-menu-viewer__thumbs"
+                aria-label="Menü sayfaları"
+              >
+                {menuImages.map((image, index) => (
+                  <button
+                    type="button"
+                    key={image}
+                    className={
+                      index === menuPageIndex
+                        ? "ob-menu-viewer__thumb is-active"
+                        : "ob-menu-viewer__thumb"
+                    }
+                    onClick={() => setMenuPageIndex(index)}
+                    aria-label={`${index + 1}. menü sayfasına git`}
+                    aria-current={index === menuPageIndex ? "page" : undefined}
+                  >
+                    <img
+                      src={image}
+                      alt=""
+                      onError={() => markMenuImageFailed(image)}
+                    />
+                    <span>{index + 1}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

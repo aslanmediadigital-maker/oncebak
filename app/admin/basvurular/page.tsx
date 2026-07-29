@@ -28,6 +28,12 @@ type BusinessRequest = {
   created_at: string;
 };
 
+function isImageMenuUrl(value: string | null | undefined) {
+  return Boolean(
+    value && /\.(?:png|jpe?g|webp|gif|avif)(?:$|[?#])/i.test(value)
+  );
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("tr-TR", {
     day: "2-digit",
@@ -266,6 +272,8 @@ export default function BasvurularPage() {
     setActionMessage(null);
 
     const slug = `${createSlug(request.business_name)}-${Date.now()}`;
+    const submittedMenuUrl = request.menu_file_url || request.menu_url;
+    const submittedMenuIsImage = isImageMenuUrl(submittedMenuUrl);
 
     const { error: insertError } = await supabase.from("businesses").insert({
       name: request.business_name,
@@ -282,7 +290,10 @@ export default function BasvurularPage() {
       featured: false,
       cover_image: request.cover_image_url,
       gallery: request.gallery_urls ?? [],
-      menu_url: request.menu_file_url || request.menu_url,
+      menu_url: submittedMenuIsImage ? null : submittedMenuUrl,
+      menu_images:
+        submittedMenuIsImage && submittedMenuUrl ? [submittedMenuUrl] : [],
+      menu_updated_at: submittedMenuUrl ? new Date().toISOString() : null,
     });
 
     if (insertError) {

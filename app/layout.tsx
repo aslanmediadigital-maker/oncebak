@@ -76,11 +76,6 @@ export const metadata: Metadata = {
     canonical: "https://xn--ncebak-vxa.com",
   },
 
-  icons: {
-    icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
-
   manifest: "/manifest.webmanifest",
 };
 

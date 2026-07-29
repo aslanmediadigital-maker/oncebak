@@ -22,9 +22,9 @@ export default function GizlilikPage() {
         <article className="legal-card">
           <h2>Toplanabilecek bilgiler</h2>
           <p>
-            İletişim formu üzerinden paylaştığınız ad, işletme adı, telefon,
-            e-posta ve mesaj içeriği yalnızca sizinle iletişime geçmek amacıyla
-            kullanılabilir.
+            İşletmeni Tanıt başvuru formu üzerinden paylaştığınız işletme ve
+            iletişim bilgileri, başvurunuzu değerlendirmek ve sizinle iletişime
+            geçmek amacıyla kullanılabilir.
           </p>
         </article>
 
