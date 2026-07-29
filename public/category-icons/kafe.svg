@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+<title id="title">Kafe</title>
+<path fill="#FFF2EC" stroke="#F36F32" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15 22h31v15a10 10 0 0 1-10 10H25a10 10 0 0 1-10-10V22Z"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M46 26h3a6 6 0 1 1 0 12h-3M20 53h29"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M24 10c-3 3 3 5 0 8M34 8c-3 3 3 5 0 8"/>
+</svg>

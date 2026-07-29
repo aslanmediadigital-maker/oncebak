@@ -352,8 +352,8 @@ export default function BasvurularPage() {
   }
 
   return (
-    <main style={styles.page}>
-      <aside style={styles.sidebar}>
+    <main className="applications-page" style={styles.page}>
+      <aside className="applications-sidebar" style={styles.sidebar}>
         <div>
           <a href="/" style={styles.logo}>
             Önce<span style={{ color: "#ff5a1f" }}>Bak</span>
@@ -361,7 +361,7 @@ export default function BasvurularPage() {
 
           <p style={styles.panelLabel}>Yönetim Paneli</p>
 
-          <nav style={styles.navigation}>
+          <nav className="applications-navigation" style={styles.navigation}>
             <a href="/admin/dashboard" style={styles.navigationItem}>
               📊 Dashboard
             </a>
@@ -398,8 +398,8 @@ export default function BasvurularPage() {
         </div>
       </aside>
 
-      <section style={styles.content}>
-        <header style={styles.header}>
+      <section className="applications-content" style={styles.content}>
+        <header className="applications-header" style={styles.header}>
           <div>
             <p style={styles.eyebrow}>İŞLETME YÖNETİMİ</p>
             <h1 style={styles.title}>İşletme başvuruları</h1>
@@ -409,12 +409,12 @@ export default function BasvurularPage() {
             </p>
           </div>
 
-          <a href="/admin/yeni-isletme" style={styles.newBusinessButton}>
+          <a className="applications-new-button" href="/admin/yeni-isletme" style={styles.newBusinessButton}>
             + Yeni İşletme
           </a>
         </header>
 
-        <section style={styles.statsGrid}>
+        <section className="applications-stats" style={styles.statsGrid}>
           <StatCard label="Toplam Başvuru" value={stats.total} />
           <StatCard label="Bekleyen" value={stats.pending} />
           <StatCard label="Onaylanan" value={stats.approved} />
@@ -434,8 +434,8 @@ export default function BasvurularPage() {
           </div>
         )}
 
-        <section style={styles.tableCard}>
-          <div style={styles.tableHeader}>
+        <section className="applications-table-card" style={styles.tableCard}>
+          <div className="applications-table-header" style={styles.tableHeader}>
             <div>
               <h2 style={styles.sectionTitle}>Başvurular</h2>
               <p style={styles.sectionDescription}>
@@ -448,7 +448,7 @@ export default function BasvurularPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="İşletme, kategori veya bölge ara..."
-              style={styles.searchInput}
+              className="applications-search" style={styles.searchInput}
             />
           </div>
 
@@ -469,8 +469,8 @@ export default function BasvurularPage() {
           )}
 
           {!loading && !errorMessage && filteredRequests.length > 0 && (
-            <div style={styles.tableWrapper}>
-              <table style={styles.table}>
+            <div className="applications-table-wrapper" style={styles.tableWrapper}>
+              <table className="applications-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>İşletme</th>
@@ -485,18 +485,18 @@ export default function BasvurularPage() {
 
                 <tbody>
                   {filteredRequests.map((request) => (
-                    <tr key={request.id}>
-                      <td style={styles.td}>
+                    <tr className="applications-row" key={request.id}>
+                      <td data-label="İşletme" style={styles.td}>
                         <strong>{request.business_name}</strong>
                         {request.email && (
                           <span style={styles.secondaryText}>{request.email}</span>
                         )}
                       </td>
-                      <td style={styles.td}>{request.category}</td>
-                      <td style={styles.td}>{request.region}</td>
-                      <td style={styles.td}>{request.phone}</td>
-                      <td style={styles.td}>{formatDate(request.created_at)}</td>
-                      <td style={styles.td}>
+                      <td data-label="Kategori" style={styles.td}>{request.category}</td>
+                      <td data-label="Bölge" style={styles.td}>{request.region}</td>
+                      <td data-label="Telefon" style={styles.td}>{request.phone}</td>
+                      <td data-label="Tarih" style={styles.td}>{formatDate(request.created_at)}</td>
+                      <td data-label="Durum" style={styles.td}>
                         <span
                           style={{
                             ...styles.statusBadge,
@@ -510,8 +510,8 @@ export default function BasvurularPage() {
                           {statusLabel(request.status)}
                         </span>
                       </td>
-                      <td style={styles.td}>
-                        <div style={styles.actionGroup}>
+                      <td data-label="İşlemler" style={styles.td}>
+                        <div className="applications-actions" style={styles.actionGroup}>
                           <button
                             type="button"
                             onClick={() => setSelectedRequest(request)}
@@ -602,11 +602,11 @@ export default function BasvurularPage() {
 
       {selectedRequest && (
         <div
-          style={styles.modalBackdrop}
+          className="applications-modal-backdrop" style={styles.modalBackdrop}
           onClick={() => setSelectedRequest(null)}
         >
-          <div style={styles.modal} onClick={(event) => event.stopPropagation()}>
-            <div style={styles.modalHeader}>
+          <div className="applications-modal" style={styles.modal} onClick={(event) => event.stopPropagation()}>
+            <div className="applications-modal-header" style={styles.modalHeader}>
               <div>
                 <p style={styles.eyebrow}>BAŞVURU DETAYI</p>
                 <h2 style={styles.modalTitle}>
@@ -629,6 +629,7 @@ export default function BasvurularPage() {
                 <img
                   src={selectedRequest.cover_image_url}
                   alt={`${selectedRequest.business_name} kapak fotoğrafı`}
+                  className="applications-cover-image"
                   style={styles.coverImage}
                 />
 
@@ -658,7 +659,7 @@ export default function BasvurularPage() {
               </div>
 
               {(selectedRequest.gallery_urls ?? []).length > 0 ? (
-                <div style={styles.galleryGrid}>
+                <div className="applications-gallery" style={styles.galleryGrid}>
                   {(selectedRequest.gallery_urls ?? []).map((imageUrl, index) => (
                     <a
                       key={`${imageUrl}-${index}`}
@@ -690,6 +691,7 @@ export default function BasvurularPage() {
                     href={selectedRequest.menu_file_url}
                     target="_blank"
                     rel="noreferrer"
+                    className="applications-menu-card"
                     style={styles.menuFileCard}
                   >
                     <span style={styles.pdfBadge}>PDF</span>
@@ -725,6 +727,7 @@ export default function BasvurularPage() {
                   href={selectedRequest.menu_url}
                   target="_blank"
                   rel="noreferrer"
+                  className="applications-menu-card"
                   style={styles.menuFileCard}
                 >
                   <span style={styles.linkBadge}>URL</span>
@@ -743,7 +746,7 @@ export default function BasvurularPage() {
               )}
             </section>
 
-            <div style={styles.detailGrid}>
+            <div className="applications-detail-grid" style={styles.detailGrid}>
               <Detail label="Kategori" value={selectedRequest.category} />
               <Detail label="Bölge" value={selectedRequest.region} />
               <Detail label="Adres" value={selectedRequest.address} />
@@ -780,6 +783,269 @@ export default function BasvurularPage() {
           </div>
         </div>
       )}
+
+      <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
+
+        html,
+        body {
+          max-width: 100%;
+          overflow-x: hidden;
+        }
+
+        @media (max-width: 1100px) {
+          .applications-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media (max-width: 980px) {
+          .applications-page {
+            display: block !important;
+            min-width: 0;
+            overflow-x: hidden;
+          }
+
+          .applications-sidebar {
+            position: sticky !important;
+            z-index: 50;
+            top: 0;
+            width: 100% !important;
+            min-height: auto !important;
+            height: auto !important;
+            padding: 14px 14px 12px !important;
+          }
+
+          .applications-sidebar > div:first-child {
+            width: 100%;
+          }
+
+          .applications-sidebar > div:last-child {
+            display: none !important;
+          }
+
+          .applications-sidebar [style*="font-size: 26px"] {
+            display: inline-block;
+            font-size: 22px !important;
+          }
+
+          .applications-sidebar [style*="margin-top: 8px"] {
+            display: none !important;
+          }
+
+          .applications-navigation {
+            display: flex !important;
+            width: 100%;
+            gap: 8px !important;
+            overflow-x: auto;
+            margin-top: 12px !important;
+            padding-bottom: 2px;
+            scrollbar-width: none;
+          }
+
+          .applications-navigation::-webkit-scrollbar {
+            display: none;
+          }
+
+          .applications-navigation a {
+            flex: 0 0 auto;
+            padding: 10px 12px !important;
+            font-size: 12px;
+            white-space: nowrap;
+          }
+
+          .applications-content {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 26px 16px 60px !important;
+          }
+
+          .applications-header {
+            align-items: stretch !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            margin-bottom: 22px !important;
+          }
+
+          .applications-header h1 {
+            font-size: 34px !important;
+            overflow-wrap: anywhere;
+          }
+
+          .applications-new-button {
+            display: flex !important;
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+          }
+
+          .applications-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 12px !important;
+          }
+
+          .applications-table-header {
+            align-items: stretch !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            padding: 20px !important;
+          }
+
+          .applications-search {
+            max-width: none !important;
+          }
+
+          .applications-table-wrapper {
+            overflow: visible !important;
+            padding: 14px;
+          }
+
+          .applications-table {
+            min-width: 0 !important;
+            border-collapse: separate !important;
+            border-spacing: 0 14px !important;
+          }
+
+          .applications-table thead {
+            display: none;
+          }
+
+          .applications-table tbody,
+          .applications-table tr,
+          .applications-table td {
+            display: block;
+            width: 100%;
+          }
+
+          .applications-row {
+            overflow: hidden;
+            border: 1px solid #ebe8e4;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(38, 30, 24, 0.05);
+          }
+
+          .applications-row td {
+            display: grid !important;
+            grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr);
+            align-items: start;
+            gap: 12px;
+            padding: 12px 14px !important;
+            border-bottom: 1px solid #f0eeeb !important;
+            overflow-wrap: anywhere;
+          }
+
+          .applications-row td:last-child {
+            border-bottom: 0 !important;
+          }
+
+          .applications-row td::before {
+            content: attr(data-label);
+            color: #737373;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+          }
+
+          .applications-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px !important;
+          }
+
+          .applications-actions button {
+            width: 100%;
+          }
+
+          .applications-modal-backdrop {
+            align-items: end !important;
+            padding: 0 !important;
+          }
+
+          .applications-modal {
+            width: 100% !important;
+            max-width: none !important;
+            max-height: 94vh !important;
+            padding: 20px 16px 28px !important;
+            border-radius: 22px 22px 0 0 !important;
+          }
+
+          .applications-modal-header h2 {
+            font-size: 25px !important;
+            overflow-wrap: anywhere;
+          }
+
+          .applications-cover-image {
+            height: 220px !important;
+          }
+
+          .applications-gallery {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .applications-detail-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .applications-menu-card {
+            grid-template-columns: 48px minmax(0, 1fr) auto !important;
+            gap: 10px !important;
+            padding: 13px !important;
+          }
+
+          .applications-menu-card > span:first-child {
+            width: 48px !important;
+            height: 48px !important;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .applications-content {
+            padding-inline: 10px !important;
+          }
+
+          .applications-stats {
+            grid-template-columns: 1fr !important;
+          }
+
+          .applications-table-card {
+            border-radius: 16px !important;
+          }
+
+          .applications-table-wrapper {
+            padding: 10px;
+          }
+
+          .applications-row td {
+            grid-template-columns: 1fr;
+            gap: 6px;
+          }
+
+          .applications-actions {
+            grid-template-columns: 1fr !important;
+          }
+
+          .applications-gallery {
+            grid-template-columns: 1fr !important;
+          }
+
+          .applications-modal-header {
+            gap: 12px !important;
+          }
+
+          .applications-menu-card {
+            grid-template-columns: 44px minmax(0, 1fr) !important;
+          }
+
+          .applications-menu-card > span:last-child {
+            display: none;
+          }
+        }
+      `}</style>
     </main>
   );
 }

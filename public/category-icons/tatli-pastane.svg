@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+<title id="title">Tatlı ve Pastane</title>
+<path fill="#FFF2EC" stroke="#F36F32" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M16 31h32l-3 18H19l-3-18Z"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M19 31c0-7.2 5.8-13 13-13s13 5.8 13 13"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M32 18v-5"/>
+<circle cx="32" cy="10" r="2.5" fill="#F36F32"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M22 38c3 2 5 2 8 0s5-2 8 0 5 2 8 0"/>
+</svg>

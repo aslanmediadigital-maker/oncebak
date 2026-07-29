@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+<title id="title">Otel</title>
+<path fill="#FFF2EC" stroke="#F36F32" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15 53V16a4 4 0 0 1 4-4h26a4 4 0 0 1 4 4v37"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M10 53h44M25 53V41h14v12"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M22 21h4M30 21h4M38 21h4M22 29h4M30 29h4M38 29h4"/>
+</svg>

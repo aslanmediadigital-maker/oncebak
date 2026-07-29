@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+<title id="title">Kahvaltı</title>
+<ellipse cx="32" cy="34" rx="21" ry="15" fill="#FFF2EC" stroke="#F36F32" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="32" cy="34" r="7.5" fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path fill="none" stroke="#F36F32" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M13 34h6M45 34h6M32 13v5M18 20l4 4M46 20l-4 4"/>
+</svg>

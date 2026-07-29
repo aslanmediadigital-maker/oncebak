@@ -225,11 +225,18 @@ export default function AdminPage() {
   }
 
   return (
-    <main style={styles.page}>
+    <main className="admin-page" style={styles.page}>
       <AdminSidebar />
 
-      <section style={styles.content}>
-        <header style={styles.header}>
+      <nav className="admin-mobile-nav" aria-label="Mobil yönetim menüsü">
+        <a href="/admin">Dashboard</a>
+        <a href="/admin/isletmeler">İşletmeler</a>
+        <a href="/admin/basvurular">Başvurular</a>
+        <a href="/admin/yeni-isletme">+ Yeni İşletme</a>
+      </nav>
+
+      <section className="admin-content" style={styles.content}>
+        <header className="admin-header" style={styles.header}>
           <div>
             <p style={styles.eyebrow}>ÖNCEBAK YÖNETİMİ</p>
             <h1 style={styles.title}>Dashboard</h1>
@@ -239,7 +246,7 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <a href="/admin/yeni-isletme" style={styles.primaryButton}>
+          <a className="admin-primary-button" href="/admin/yeni-isletme" style={styles.primaryButton}>
             + Yeni İşletme
           </a>
         </header>
@@ -248,7 +255,7 @@ export default function AdminPage() {
           <div style={styles.errorMessage}>{dashboardError}</div>
         )}
 
-        <section style={styles.statsGrid}>
+        <section className="admin-stats-grid" style={styles.statsGrid}>
           <StatCard
             label="Toplam İşletme"
             value={dashboardLoading ? "..." : stats.totalBusinesses}
@@ -271,9 +278,9 @@ export default function AdminPage() {
           />
         </section>
 
-        <section style={styles.dashboardGrid}>
-          <article style={styles.panelCard}>
-            <div style={styles.panelHeader}>
+        <section className="admin-dashboard-grid" style={styles.dashboardGrid}>
+          <article className="admin-panel-card" style={styles.panelCard}>
+            <div className="admin-panel-header" style={styles.panelHeader}>
               <div>
                 <h2 style={styles.panelTitle}>Son başvurular</h2>
                 <p style={styles.panelDescription}>
@@ -293,7 +300,7 @@ export default function AdminPage() {
             ) : (
               <div>
                 {recentRequests.map((request) => (
-                  <div key={request.id} style={styles.requestRow}>
+                  <div className="admin-request-row" key={request.id} style={styles.requestRow}>
                     <div>
                       <strong style={styles.requestName}>
                         {request.business_name}
@@ -303,7 +310,7 @@ export default function AdminPage() {
                       </span>
                     </div>
 
-                    <div style={styles.requestRight}>
+                    <div className="admin-request-right" style={styles.requestRight}>
                       <span
                         style={{
                           ...styles.statusBadge,
@@ -330,7 +337,7 @@ export default function AdminPage() {
             )}
           </article>
 
-          <article style={styles.quickCard}>
+          <article className="admin-quick-card" style={styles.quickCard}>
             <p style={styles.eyebrow}>HIZLI İŞLEMLER</p>
             <h2 style={styles.quickTitle}>Yönetimi hızlandır.</h2>
             <p style={styles.quickDescription}>
@@ -358,8 +365,8 @@ export default function AdminPage() {
           </article>
         </section>
 
-        <section style={styles.businessSection}>
-          <div style={styles.sectionHeader}>
+        <section className="admin-business-section" style={styles.businessSection}>
+          <div className="admin-section-header" style={styles.sectionHeader}>
             <div>
               <h2 style={styles.panelTitle}>Son eklenen işletmeler</h2>
               <p style={styles.panelDescription}>
@@ -377,9 +384,9 @@ export default function AdminPage() {
           ) : recentBusinesses.length === 0 ? (
             <div style={styles.emptyState}>Henüz işletme eklenmemiş.</div>
           ) : (
-            <div style={styles.businessGrid}>
+            <div className="admin-business-grid" style={styles.businessGrid}>
               {recentBusinesses.map((business) => (
-                <article key={business.id} style={styles.businessCard}>
+                <article className="admin-business-card" key={business.id} style={styles.businessCard}>
                   <div style={styles.imageArea}>
                     {business.cover_image ? (
                       <img
@@ -393,7 +400,7 @@ export default function AdminPage() {
                   </div>
 
                   <div style={styles.businessBody}>
-                    <div style={styles.businessTop}>
+                    <div className="admin-business-top" style={styles.businessTop}>
                       <div>
                         <h3 style={styles.businessName}>{business.name}</h3>
                         <p style={styles.businessRegion}>
@@ -411,7 +418,7 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div style={styles.businessActions}>
+                    <div className="admin-business-actions" style={styles.businessActions}>
                       <a
                         href={`/admin/isletmeler/${business.id}`}
                         style={styles.editButton}
@@ -434,6 +441,164 @@ export default function AdminPage() {
           )}
         </section>
       </section>
+
+      <style jsx global>{`
+        .admin-mobile-nav {
+          display: none;
+        }
+
+        @media (max-width: 1100px) {
+          .admin-stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .admin-dashboard-grid {
+            grid-template-columns: 1fr !important;
+          }
+
+          .admin-business-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+        }
+
+        @media (max-width: 760px) {
+          .admin-page {
+            display: block !important;
+            min-width: 0;
+            overflow-x: hidden;
+          }
+
+          .admin-page > :first-child {
+            display: none !important;
+          }
+
+          .admin-mobile-nav {
+            position: sticky;
+            z-index: 50;
+            top: 0;
+            display: flex;
+            width: 100%;
+            gap: 7px;
+            overflow-x: auto;
+            padding: 11px 12px;
+            border-bottom: 1px solid #2f2f2f;
+            background: #171717;
+            scrollbar-width: none;
+          }
+
+          .admin-mobile-nav::-webkit-scrollbar {
+            display: none;
+          }
+
+          .admin-mobile-nav a {
+            flex: 0 0 auto;
+            padding: 10px 12px;
+            border: 1px solid #343434;
+            border-radius: 10px;
+            background: #232323;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            text-decoration: none;
+            white-space: nowrap;
+          }
+
+          .admin-mobile-nav a:last-child {
+            border-color: #ff5a1f;
+            background: #ff5a1f;
+          }
+
+          .admin-content {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 24px 14px 55px !important;
+          }
+
+          .admin-header {
+            align-items: stretch !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            margin-bottom: 22px !important;
+          }
+
+          .admin-header h1 {
+            font-size: 32px !important;
+          }
+
+          .admin-primary-button {
+            display: flex !important;
+            width: 100%;
+            justify-content: center;
+            box-sizing: border-box;
+            text-align: center;
+          }
+
+          .admin-stats-grid,
+          .admin-business-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+
+          .admin-dashboard-grid {
+            grid-template-columns: 1fr !important;
+            gap: 14px !important;
+          }
+
+          .admin-panel-header,
+          .admin-section-header {
+            align-items: flex-start !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+          }
+
+          .admin-request-row {
+            align-items: flex-start !important;
+            flex-direction: column !important;
+            gap: 12px !important;
+            padding: 16px !important;
+          }
+
+          .admin-request-right {
+            width: 100%;
+            justify-content: space-between;
+          }
+
+          .admin-quick-card,
+          .admin-business-section {
+            padding: 20px !important;
+          }
+
+          .admin-business-top {
+            flex-direction: column !important;
+          }
+
+          .admin-business-top > div:last-child {
+            justify-content: flex-start !important;
+          }
+
+          .admin-business-actions {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        @media (max-width: 420px) {
+          .admin-content {
+            padding-inline: 10px !important;
+          }
+
+          .admin-mobile-nav {
+            padding-inline: 10px;
+          }
+
+          .admin-panel-card,
+          .admin-quick-card,
+          .admin-business-section,
+          .admin-business-card {
+            border-radius: 16px !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }

@@ -38,18 +38,24 @@ const REGIONS = [
 ];
 
 const CATEGORY_ICONS: Record<string, string> = {
-  restoran: "🍽️",
-  restoranlar: "🍽️",
-  kafe: "☕",
-  kafeler: "☕",
-  kahvaltı: "🥐",
-  tatlıcı: "🍰",
-  tatlıcılar: "🍰",
-  aktivite: "🎈",
-  aktiviteler: "🎈",
-  manzaralı: "🌄",
-  otel: "🏨",
-  oteller: "🏨",
+  aktivite: "/category-icons/aktivite.svg",
+  aktiviteler: "/category-icons/aktivite.svg",
+  "fast food": "/category-icons/fast-food.svg",
+  fastfood: "/category-icons/fast-food.svg",
+  "gece hayatı": "/category-icons/gece-hayati.svg",
+  kafe: "/category-icons/kafe.svg",
+  kafeler: "/category-icons/kafe.svg",
+  kahvaltı: "/category-icons/kahvalti.svg",
+  otel: "/category-icons/otel.svg",
+  oteller: "/category-icons/otel.svg",
+  restoran: "/category-icons/restoran.svg",
+  restoranlar: "/category-icons/restoran.svg",
+  tatlı: "/category-icons/tatli-pastane.svg",
+  tatlıcı: "/category-icons/tatli-pastane.svg",
+  tatlıcılar: "/category-icons/tatli-pastane.svg",
+  pastane: "/category-icons/tatli-pastane.svg",
+  "tatlı & pastane": "/category-icons/tatli-pastane.svg",
+  "tatlı ve pastane": "/category-icons/tatli-pastane.svg",
 };
 
 function getCategory(value: Business["categories"]) {
@@ -62,7 +68,8 @@ function getCategoryName(value: Business["categories"]) {
 }
 
 function categoryIcon(name: string) {
-  return CATEGORY_ICONS[name.toLocaleLowerCase("tr-TR")] ?? "📍";
+  const key = name.toLocaleLowerCase("tr-TR").trim();
+  return CATEGORY_ICONS[key] ?? "/category-icons/aktivite.svg";
 }
 
 function formatPrice(value: number | null) {
@@ -339,7 +346,12 @@ export default function HomePage() {
                 onClick={() => selectCategory(String(category.id))}
               >
                 <span className="category-icon">
-                  {categoryIcon(category.name)}
+                  <img
+                    src={categoryIcon(category.name)}
+                    alt={category.name}
+                    width={30}
+                    height={30}
+                  />
                 </span>
                 <strong>{category.name}</strong>
                 <small>
@@ -550,6 +562,7 @@ export default function HomePage() {
             <strong>Kurumsal</strong>
             <Link href="/hakkimizda">Hakkımızda</Link>
             <Link href="/gizlilik">Gizlilik Politikası</Link>
+            <Link href="/kullanim-sartlari">Kullanım Şartları</Link>
             <Link href="/iletisim">İletişim</Link>
           </div>
 
@@ -570,6 +583,7 @@ export default function HomePage() {
           <div className="copyright-links">
             <Link href="/hakkimizda">Hakkımızda</Link>
             <Link href="/gizlilik">Gizlilik</Link>
+            <Link href="/kullanim-sartlari">Kullanım Şartları</Link>
             <Link href="/iletisim">İletişim</Link>
           </div>
         </div>
@@ -922,6 +936,12 @@ function GlobalStyles() {
         border-radius: 15px;
         background: #fff1e9;
         font-size: 24px;
+      }
+
+      .category-icon img {
+        width:30px;
+        height:30px;
+        object-fit:contain;
       }
 
       .category-card strong {
