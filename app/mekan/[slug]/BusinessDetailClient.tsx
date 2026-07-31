@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import SiteHeader from "../../components/SiteHeader";
 
-type Business = {
+export type Business = {
   id: string | number;
   name: string;
   slug: string;
@@ -82,14 +82,13 @@ function formatMenuDate(value: string | null) {
   }).format(date);
 }
 
-export default function BusinessDetailPage() {
-  const params = useParams<{ slug: string }>();
-  const slug = params.slug;
-
-  const [business, setBusiness] = useState<Business | null>(null);
+export default function BusinessDetailPage({
+  initialBusiness,
+}: {
+  initialBusiness: Business | null;
+}) {
+  const business = initialBusiness;
   const [similar, setSimilar] = useState<Business[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [favorite, setFavorite] = useState(false);
   const [menuViewerOpen, setMenuViewerOpen] = useState(false);
@@ -101,33 +100,13 @@ export default function BusinessDetailPage() {
   const menuTouchStartX = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!slug) return;
+    setSimilar([]);
+    if (!business) return;
 
+    const current = business;
     let active = true;
 
-    async function loadBusiness() {
-      setLoading(true);
-      setMessage("");
-
-      const { data, error } = await supabase
-        .from("businesses")
-        .select(
-          "id, name, slug, description, region, address, phone, whatsapp, instagram, website, google_maps_url, menu_url, menu_images, menu_updated_at, opening_hours, features, gallery, price_level, rating, verified, featured, cover_image, categories(name)"
-        )
-        .eq("slug", slug)
-        .single();
-
-      if (!active) return;
-
-      if (error || !data) {
-        setMessage("İşletme bulunamadı veya bilgiler yüklenemedi.");
-        setLoading(false);
-        return;
-      }
-
-      const current = data as unknown as Business;
-      setBusiness(current);
-
+    function loadFavorite() {
       const stored = window.localStorage.getItem("oncebak-favorites");
       if (stored) {
         try {
@@ -136,8 +115,12 @@ export default function BusinessDetailPage() {
         } catch {
           setFavorite(false);
         }
+      } else {
+        setFavorite(false);
       }
+    }
 
+    async function loadSimilar() {
       const categoryName = getCategoryName(current.categories);
 
       const { data: similarData } = await supabase
@@ -155,16 +138,16 @@ export default function BusinessDetailPage() {
             Number(getCategoryName(a.categories) === categoryName)
         );
         setSimilar(rows);
-        setLoading(false);
       }
     }
 
-    loadBusiness();
+    loadFavorite();
+    void loadSimilar();
 
     return () => {
       active = false;
     };
-  }, [slug]);
+  }, [business]);
 
   const gallery = useMemo(() => {
     if (!business) return [];
@@ -305,25 +288,12 @@ export default function BusinessDetailPage() {
     setFavorite(next.includes(id));
   }
 
-  if (loading) {
-    return (
-      <main className="state-page">
-        <div className="state-card">
-          <span className="loader" />
-          <strong>İşletme yükleniyor</strong>
-          <p>Güncel bilgiler hazırlanıyor.</p>
-        </div>
-        <GlobalStyles />
-      </main>
-    );
-  }
-
-  if (!business || message) {
+  if (!business) {
     return (
       <main className="state-page">
         <div className="state-card">
           <strong>İşletme bulunamadı</strong>
-          <p>{message}</p>
+          <p>İşletme bulunamadı veya bilgiler yüklenemedi.</p>
           <a href="/">Ana sayfaya dön</a>
         </div>
         <GlobalStyles />
@@ -338,23 +308,7 @@ export default function BusinessDetailPage() {
 
   return (
     <main>
-      <header className="topbar">
-        <div className="shell nav">
-          <a href="/" className="brand">
-            Önce<span>Bak</span>
-          </a>
-
-          <div className="nav-links">
-            <a href="/">Ana Sayfa</a>
-            <a href="/#mekanlar">Mekânlar</a>
-            <a href="/#kategoriler">Kategoriler</a>
-          </div>
-
-          <button className={`favorite-top ${favorite ? "active" : ""}`} onClick={toggleFavorite}>
-            {favorite ? "♥ Favorilerde" : "♡ Favoriye Ekle"}
-          </button>
-        </div>
-      </header>
+      <SiteHeader />
 
       <section className="hero">
         <div
@@ -424,6 +378,16 @@ export default function BusinessDetailPage() {
                   Yol Tarifi
                 </a>
               )}
+
+              <button
+                type="button"
+                className={`action secondary favorite-action ${
+                  favorite ? "active" : ""
+                }`}
+                onClick={toggleFavorite}
+              >
+                {favorite ? "♥ Favorilerde" : "♡ Favoriye Ekle"}
+              </button>
             </div>
           </div>
         </div>
@@ -677,7 +641,7 @@ export default function BusinessDetailPage() {
 
       <footer>
         <div className="shell footer-content">
-          <a href="/" className="brand footer-brand">
+          <a href="/" className="footer-brand">
             Önce<span>Bak</span>
           </a>
           <p>Kapadokya'yı gitmeden önce keşfetmenin en seçkin yolu.</p>
@@ -936,51 +900,14 @@ function GlobalStyles() {
       }
       @keyframes spin { to { transform: rotate(360deg); } }
 
-      .topbar {
-        position: absolute;
-        z-index: 20;
-        top: 0;
-        left: 0;
-        right: 0;
-        border-bottom: 1px solid rgba(255,255,255,.16);
-        background: linear-gradient(180deg, rgba(11,9,8,.58), rgba(11,9,8,.12));
-        color: white;
-        backdrop-filter: blur(8px);
-      }
-      .nav {
-        min-height: 78px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 26px;
-      }
-      .brand {
+      .footer-brand {
         color: white;
         font-size: 26px;
         font-weight: 950;
         letter-spacing: -1.4px;
         text-decoration: none;
       }
-      .brand span { color: var(--accent); }
-      .nav-links { display: flex; gap: 28px; }
-      .nav-links a {
-        color: rgba(255,255,255,.75);
-        font-size: 13px;
-        font-weight: 800;
-        text-decoration: none;
-      }
-      .favorite-top {
-        padding: 11px 15px;
-        border: 1px solid rgba(255,255,255,.35);
-        border-radius: 999px;
-        background: rgba(20,16,13,.25);
-        color: white;
-        font-size: 12px;
-        font-weight: 900;
-        cursor: pointer;
-        backdrop-filter: blur(12px);
-      }
-      .favorite-top.active { background: var(--accent); border-color: var(--accent); }
+      .footer-brand span { color: var(--accent); }
 
       .hero {
         position: relative;
@@ -1083,6 +1010,11 @@ function GlobalStyles() {
         background: rgba(20,16,13,.34);
         color: white;
         backdrop-filter: blur(12px);
+      }
+      .favorite-action { cursor: pointer; }
+      .favorite-action.active {
+        border-color: var(--accent);
+        background: var(--accent);
       }
 
       .gallery-section { padding: 24px 0 0; background: var(--paper); }
@@ -1465,7 +1397,6 @@ function GlobalStyles() {
       .mobile-action-bar { display: none; }
 
       @media (max-width: 950px) {
-        .nav-links { display: none; }
         .hero { min-height: 500px; }
         .hero-bottom { align-items: flex-start; flex-direction: column; }
         .hero-actions { justify-content: flex-start; }
@@ -1479,9 +1410,6 @@ function GlobalStyles() {
 
       @media (max-width: 650px) {
         .shell { width: min(100% - 24px, 1180px); }
-        .topbar { position: absolute; }
-        .nav { min-height: 68px; }
-        .favorite-top { padding: 9px 11px; font-size: 10px; }
         .hero { min-height: 600px; }
         .hero-content { padding-bottom: 34px; }
         .back-link { bottom: 220px; }

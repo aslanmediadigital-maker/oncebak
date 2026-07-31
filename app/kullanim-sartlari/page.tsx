@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Kullanım Şartları | ÖnceBak",
+  title: "Kullanım Şartları",
   description:
     "ÖnceBak kullanım şartlarını inceleyin. Platformu kullanırken geçerli olan kurallar ve koşullar.",
 };

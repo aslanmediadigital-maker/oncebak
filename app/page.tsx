@@ -222,6 +222,10 @@ function PremiumSearchDropdown({
               }`}
               key={option.value}
               onMouseEnter={() => setActiveIndex(index)}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                selectOption(index);
+              }}
               onClick={() => selectOption(index)}
             >
               <span>{option.label}</span>
@@ -414,9 +418,21 @@ export default function HomePage() {
     }, 0);
   }
 
+  function resetExplore() {
+    setSearch("");
+    setRegion("Tüm Bölgeler");
+    setCategoryId("Tüm Kategoriler");
+    setActiveQuery("");
+    setActiveRegion("Tüm Bölgeler");
+    setActiveCategory("Tüm Kategoriler");
+    setShowAll(false);
+    setOpenDropdown(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <main>
-      <SiteHeader />
+      <SiteHeader isHomePage onHomeNavigate={resetExplore} />
 
       <section className="hero">
         <div className="hero-overlay" />
@@ -985,6 +1001,7 @@ function GlobalStyles() {
 
       .business-section {
         padding-top: 30px;
+        scroll-margin-top: 104px;
       }
 
       .section-heading {
@@ -1628,6 +1645,7 @@ function GlobalStyles() {
 
         .business-section {
           padding-top: 15px;
+          scroll-margin-top: 88px;
         }
 
         .section-heading {

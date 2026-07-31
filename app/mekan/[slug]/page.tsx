@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { supabase } from "../../../lib/supabase";
-import BusinessDetailClient from "./BusinessDetailClient";
+import BusinessDetailClient, {
+  type Business,
+} from "./BusinessDetailClient";
 
 const BASE_URL = "https://xn--ncebak-vxa.com";
 
@@ -10,23 +13,11 @@ type PageProps = {
   }>;
 };
 
-type BusinessSeoData = {
-  name: string;
-  slug: string;
-  description: string | null;
-  region: string | null;
-  address: string | null;
-  phone: string | null;
-  website: string | null;
-  instagram: string | null;
-  cover_image: string | null;
-};
-
-async function getBusiness(slug: string): Promise<BusinessSeoData | null> {
+const getBusiness = cache(async (slug: string): Promise<Business | null> => {
   const { data, error } = await supabase
     .from("businesses")
     .select(
-      "name, slug, description, region, address, phone, website, instagram, cover_image"
+      "id, name, slug, description, region, address, phone, whatsapp, instagram, website, google_maps_url, menu_url, menu_images, menu_updated_at, opening_hours, features, gallery, price_level, rating, verified, featured, cover_image, categories(name)"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -35,8 +26,8 @@ async function getBusiness(slug: string): Promise<BusinessSeoData | null> {
     return null;
   }
 
-  return data as BusinessSeoData;
-}
+  return data as unknown as Business;
+});
 
 export async function generateMetadata({
   params,
@@ -148,7 +139,7 @@ export default async function Page({ params }: PageProps) {
         />
       )}
 
-      <BusinessDetailClient />
+      <BusinessDetailClient initialBusiness={business} />
     </>
   );
 }
