@@ -255,10 +255,27 @@ export default function HomePage() {
   const [activeRegion, setActiveRegion] = useState("Tüm Bölgeler");
   const [activeCategory, setActiveCategory] = useState("Tüm Kategoriler");
   const [showAll, setShowAll] = useState(false);
+  const [showHeroVideo, setShowHeroVideo] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<
     "region" | "category" | null
   >(null);
   const searchPanelRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const videoQuery = window.matchMedia(
+      "(min-width: 651px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)"
+    );
+
+    function updateVideoVisibility() {
+      setShowHeroVideo(videoQuery.matches);
+    }
+
+    updateVideoVisibility();
+    videoQuery.addEventListener("change", updateVideoVisibility);
+    return () => {
+      videoQuery.removeEventListener("change", updateVideoVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     function handleOutsidePointer(event: PointerEvent) {
@@ -435,6 +452,21 @@ export default function HomePage() {
       <SiteHeader isHomePage onHomeNavigate={resetExplore} />
 
       <section className="hero">
+        {showHeroVideo && (
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            poster="https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=2200&q=88"
+            aria-hidden="true"
+          >
+            <source src="/hero-balloons.mp4" type="video/mp4" />
+          </video>
+        )}
+
         <div className="hero-overlay" />
 
         <div className="shell hero-content">
@@ -878,14 +910,33 @@ function GlobalStyles() {
         min-height: 760px;
         display: flex;
         align-items: center;
-        overflow: visible;
+        overflow: hidden;
         background:
+          #3c2a22
           url("https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=2200&q=88")
           center/cover no-repeat;
       }
 
+      .hero-video {
+        position: absolute;
+        z-index: 0;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        pointer-events: none;
+      }
+
+      @media (min-width: 651px) {
+        .hero-video {
+          transform: scale(1.18);
+        }
+      }
+
       .hero-overlay {
         position: absolute;
+        z-index: 1;
         inset: 0;
         background:
           linear-gradient(90deg, rgba(18, 11, 7, 0.84), rgba(18, 11, 7, 0.22)),
