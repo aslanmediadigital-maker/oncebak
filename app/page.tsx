@@ -530,6 +530,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      <div className="discovery-background">
       <section className="category-section" id="kategoriler">
         <div className="shell">
           <div className="section-heading">
@@ -712,6 +713,7 @@ export default function HomePage() {
           )}
         </div>
       </section>
+      </div>
 
       <section className="process-section" id="nasil-calisir">
         <div className="shell">
@@ -1043,6 +1045,21 @@ function GlobalStyles() {
         color: rgba(255, 255, 255, 0.72);
         font-size: 10px;
         font-weight: 800;
+      }
+
+      .discovery-background {
+        background:
+          radial-gradient(
+            circle at 50% 12%,
+            rgba(247, 111, 50, 0.06) 0%,
+            rgba(247, 111, 50, 0) 34%
+          ),
+          linear-gradient(
+            180deg,
+            #f8f4ef 0%,
+            #f3ece4 55%,
+            #efe6dd 100%
+          );
       }
 
       .category-section,

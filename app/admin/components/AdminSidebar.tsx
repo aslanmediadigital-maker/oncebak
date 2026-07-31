@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 
 const navigation = [
-  { href: "/admin", label: "📊 Dashboard" },
+  { href: "/admin/dashboard", label: "📊 Dashboard" },
   { href: "/admin/basvurular", label: "📥 İşletme Başvuruları" },
   { href: "/admin/isletmeler", label: "🏢 İşletmeler" },
   { href: "/admin/yeni-isletme", label: "➕ Yeni İşletme" },

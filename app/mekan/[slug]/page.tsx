@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cache } from "react";
-import { supabase } from "../../../lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import BusinessDetailClient, {
   type Business,
 } from "./BusinessDetailClient";
@@ -14,6 +14,7 @@ type PageProps = {
 };
 
 const getBusiness = cache(async (slug: string): Promise<Business | null> => {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("businesses")
     .select(

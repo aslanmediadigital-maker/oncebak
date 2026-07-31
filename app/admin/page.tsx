@@ -1,9 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
-import { supabase } from "../../lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 import AdminSidebar from "./components/AdminSidebar";
+
+const supabase = createClient();
 
 type Business = {
   id: string | number;
@@ -25,7 +28,10 @@ type BusinessRequest = {
   created_at: string;
 };
 
-export default function AdminPage() {
+export function AdminPageContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const isProtectedDashboard = pathname === "/admin/dashboard";
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -41,31 +47,73 @@ export default function AdminPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadSession() {
+    if (isProtectedDashboard) {
+      async function loadClientSession() {
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        if (!currentSession) {
+          router.replace("/admin");
+          return;
+        }
+
+        setSession(currentSession);
+        setAuthLoading(false);
+      }
+
+      void loadClientSession();
+
       const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+        setSession(currentSession);
+        setAuthLoading(false);
+
+        if (!currentSession) {
+          router.replace("/admin");
+        }
+      });
+
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
+    }
+
+    async function checkAdminSession() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
       if (!mounted) return;
 
-      setSession(currentSession);
-      setAuthLoading(false);
+      if (!user) {
+        setSession(null);
+        setAuthLoading(false);
+        return;
+      }
+
+      const { data: isAdmin, error } = await supabase.rpc("is_admin");
+      if (!mounted) return;
+
+      if (!error && isAdmin) {
+        router.replace("/admin/dashboard");
+        router.refresh();
+        return;
+      }
+
+      router.replace("/");
     }
 
-    loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      setSession(currentSession);
-      setAuthLoading(false);
-    });
+    void checkAdminSession();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
-  }, []);
+  }, [isProtectedDashboard, router]);
 
   useEffect(() => {
     if (!session) {
@@ -129,8 +177,20 @@ export default function AdminPage() {
       return;
     }
 
+    const { data: isAdmin, error: adminError } =
+      await supabase.rpc("is_admin");
+
+    if (adminError || !isAdmin) {
+      setLoginLoading(false);
+      router.replace("/");
+      router.refresh();
+      return;
+    }
+
     setPassword("");
     setLoginLoading(false);
+    router.replace("/admin/dashboard");
+    router.refresh();
   }
 
   const stats = useMemo(
@@ -602,6 +662,8 @@ export default function AdminPage() {
     </main>
   );
 }
+
+export default AdminPageContent;
 
 function StatCard({
   label,

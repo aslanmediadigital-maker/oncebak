@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { supabase } from "../../../lib/supabase";
-import AdminSidebar from "../components/AdminSidebar";
+import { supabase } from "@/lib/supabase";
+import AdminSidebar from "@/app/admin/components/AdminSidebar";
 
 type Category = {
   id: string | number;

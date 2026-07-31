@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://xn--ncebak-vxa.com";
+  const supabase = await createClient();
 
   const staticPages: MetadataRoute.Sitemap = [
     {
