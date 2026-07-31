@@ -453,18 +453,19 @@ export default function HomePage() {
 
       <section className="hero">
         {showHeroVideo && (
-          <video
-            className="hero-video"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster="https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=2200&q=88"
-            aria-hidden="true"
-          >
-            <source src="/hero-balloons.mp4" type="video/mp4" />
-          </video>
+          <div className="hero-media" aria-hidden="true">
+            <video
+              className="hero-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              poster="https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=2200&q=88"
+            >
+              <source src="/hero-balloons.mp4" type="video/mp4" />
+            </video>
+          </div>
         )}
 
         <div className="hero-overlay" />
@@ -912,16 +913,24 @@ function GlobalStyles() {
         min-height: 760px;
         display: flex;
         align-items: center;
-        overflow: hidden;
+        overflow: visible;
+        isolation: isolate;
         background:
           #3c2a22
           url("https://images.unsplash.com/photo-1641128324972-af3212f0f6bd?auto=format&fit=crop&w=2200&q=88")
           center/cover no-repeat;
       }
 
-      .hero-video {
+      .hero-media {
         position: absolute;
         z-index: 0;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .hero-video {
+        position: absolute;
         inset: 0;
         width: 100%;
         height: 100%;
@@ -940,6 +949,7 @@ function GlobalStyles() {
         position: absolute;
         z-index: 1;
         inset: 0;
+        pointer-events: none;
         background:
           linear-gradient(90deg, rgba(18, 11, 7, 0.84), rgba(18, 11, 7, 0.22)),
           linear-gradient(0deg, rgba(18, 11, 7, 0.54), transparent 50%);
@@ -948,6 +958,7 @@ function GlobalStyles() {
       .hero-content {
         position: relative;
         z-index: 2;
+        overflow: visible;
         padding-top: 115px;
         color: white;
       }
@@ -982,6 +993,8 @@ function GlobalStyles() {
       }
 
       .search-panel {
+        position: relative;
+        z-index: 3;
         display: grid;
         grid-template-columns: 1.6fr 1fr 1fr auto;
         align-items: end;
