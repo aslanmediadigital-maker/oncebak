@@ -4,6 +4,9 @@ import GirisForm from "./GirisForm";
 export const metadata: Metadata = {
   title: "Giriş",
   description: "ÖnceBak hesabına giriş yap.",
+  alternates: {
+    canonical: "/giris",
+  },
 };
 
 type GirisPageProps = {

@@ -1,7 +1,12 @@
-export const metadata = {
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "Kullanım Şartları",
   description:
     "ÖnceBak kullanım şartlarını inceleyin. Platformu kullanırken geçerli olan kurallar ve koşullar.",
+  alternates: {
+    canonical: "/kullanim-sartlari",
+  },
 };
 
 export default function KullanimSartlariPage() {

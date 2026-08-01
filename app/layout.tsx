@@ -3,7 +3,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://xn--ncebak-vxa.com"),
+  metadataBase: new URL("https://www.xn--ncebak-vxa.com"),
 
   title: {
     default: "ÖnceBak | Kapadokya Mekan Rehberi",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "tr_TR",
-    url: "https://xn--ncebak-vxa.com",
+    url: "https://www.xn--ncebak-vxa.com",
     siteName: "ÖnceBak",
     title: "ÖnceBak | Kapadokya Mekan Rehberi",
     description:
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   },
 
   alternates: {
-    canonical: "https://xn--ncebak-vxa.com",
+    canonical: "https://www.xn--ncebak-vxa.com/",
   },
 
   manifest: "/manifest.webmanifest",

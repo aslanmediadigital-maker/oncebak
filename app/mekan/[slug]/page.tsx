@@ -5,7 +5,7 @@ import BusinessDetailClient, {
   type Business,
 } from "./BusinessDetailClient";
 
-const BASE_URL = "https://xn--ncebak-vxa.com";
+const BASE_URL = "https://www.xn--ncebak-vxa.com";
 
 type PageProps = {
   params: Promise<{
